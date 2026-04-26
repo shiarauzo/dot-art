@@ -38,13 +38,9 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
     if (error) {
       setError(error.message)
     } else {
-      if (mode === 'signup') {
-        setError('Check your email to confirm your account!')
-      } else {
-        onOpenChange(false)
-        setEmail('')
-        setPassword('')
-      }
+      onOpenChange(false)
+      setEmail('')
+      setPassword('')
     }
   }
 
