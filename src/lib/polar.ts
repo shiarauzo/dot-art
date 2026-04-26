@@ -1,4 +1,4 @@
-const PRODUCT_ID = import.meta.env.VITE_POLAR_PRODUCT_ID || ''
+const CHECKOUT_LINK = import.meta.env.VITE_POLAR_CHECKOUT_LINK || ''
 
 export function getCheckoutUrl(email: string): string {
   const params = new URLSearchParams({
@@ -6,5 +6,5 @@ export function getCheckoutUrl(email: string): string {
     metadata: JSON.stringify({ user_email: email }),
   })
 
-  return `https://polar.sh/checkout/${PRODUCT_ID}?${params.toString()}`
+  return `https://buy.polar.sh/${CHECKOUT_LINK}?${params.toString()}`
 }
