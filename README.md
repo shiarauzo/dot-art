@@ -1,73 +1,112 @@
-# React + TypeScript + Vite
+# dotart
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Transform photos into beautiful dot art (stippling). Free tier with basic controls, Pro tier ($2.99 lifetime) with advanced features.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+### Free
+- Upload any image (PNG, JPG, WebP)
+- Adjust density and dot size
+- Export as SVG or PNG
+- Live preview
 
-## React Compiler
+### Pro ($2.99 lifetime)
+- Contrast & brightness controls
+- Invert colors
+- Custom dot shapes (circle, square, diamond, star, heart)
+- Custom colors (dot & background)
+- Organic/irregular spacing
+- Presets (retro, newspaper, sketch)
+- Multi-resolution export (1x, 2x, 3x, 4x)
+- Code export (React, HTML)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Tech Stack
 
-## Expanding the ESLint configuration
+- **Frontend:** React + Vite + TypeScript
+- **Styling:** Tailwind CSS + shadcn/ui
+- **Auth:** Supabase
+- **Payments:** Lemon Squeezy
+- **Deploy:** Vercel
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Setup
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### 1. Install dependencies
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### 2. Set up Supabase
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+1. Create a project at [supabase.com](https://supabase.com)
+2. Run the migration in `supabase/migrations/001_profiles.sql`
+3. Copy your project URL and anon key
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### 3. Set up Lemon Squeezy
+
+1. Create an account at [lemonsqueezy.com](https://lemonsqueezy.com)
+2. Create a product ($2.99, one-time payment)
+3. Get your store ID and variant ID
+4. Set up webhook to `https://your-project.supabase.co/functions/v1/lemon-webhook`
+
+### 4. Configure environment
+
+```bash
+cp .env.example .env
 ```
+
+Fill in your values:
+
+```env
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
+VITE_LEMONSQUEEZY_STORE_ID=your-store-id
+VITE_LEMONSQUEEZY_VARIANT_ID=your-variant-id
+```
+
+### 5. Deploy Supabase Edge Function
+
+```bash
+supabase functions deploy lemon-webhook
+```
+
+### 6. Run locally
+
+```bash
+npm run dev
+```
+
+### 7. Deploy to Vercel
+
+```bash
+vercel
+```
+
+## Project Structure
+
+```
+dotart/
+├── src/
+│   ├── components/
+│   │   ├── ui/          # shadcn/ui components
+│   │   └── AuthModal.tsx
+│   ├── context/
+│   │   └── AuthContext.tsx
+│   ├── lib/
+│   │   ├── supabase.ts
+│   │   ├── lemonsqueezy.ts
+│   │   └── utils.ts
+│   ├── App.tsx          # Main app component
+│   ├── main.tsx
+│   └── index.css
+├── supabase/
+│   ├── migrations/
+│   │   └── 001_profiles.sql
+│   └── functions/
+│       └── lemon-webhook/
+└── ...
+```
+
+## License
+
+MIT
