@@ -3,7 +3,7 @@ import { Slider } from '@/components/ui/slider'
 import { Upload, Download, Sparkles, Code, RotateCcw, Lock, Palette, User, LogOut } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { AuthModal } from '@/components/AuthModal'
-import { getCheckoutUrl } from '@/lib/lemonsqueezy'
+import { getCheckoutUrl } from '@/lib/polar'
 import { HeroArt } from '@/components/HeroArt'
 
 type DotShape = 'circle' | 'square' | 'diamond' | 'star' | 'heart'

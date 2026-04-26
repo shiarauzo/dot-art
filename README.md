@@ -25,7 +25,7 @@ Transform photos into beautiful dot art (stippling). Free tier with basic contro
 - **Frontend:** React + Vite + TypeScript
 - **Styling:** Tailwind CSS + shadcn/ui
 - **Auth:** Supabase
-- **Payments:** Lemon Squeezy
+- **Payments:** Polar.sh
 - **Deploy:** Vercel
 
 ## Setup
@@ -33,7 +33,7 @@ Transform photos into beautiful dot art (stippling). Free tier with basic contro
 ### 1. Install dependencies
 
 ```bash
-npm install
+bun install
 ```
 
 ### 2. Set up Supabase
@@ -42,12 +42,12 @@ npm install
 2. Run the migration in `supabase/migrations/001_profiles.sql`
 3. Copy your project URL and anon key
 
-### 3. Set up Lemon Squeezy
+### 3. Set up Polar
 
-1. Create an account at [lemonsqueezy.com](https://lemonsqueezy.com)
+1. Create an account at [polar.sh](https://polar.sh)
 2. Create a product ($2.99, one-time payment)
-3. Get your store ID and variant ID
-4. Set up webhook to `https://your-project.supabase.co/functions/v1/lemon-webhook`
+3. Get your product ID
+4. Set up webhook to `https://your-project.supabase.co/functions/v1/polar-webhook`
 
 ### 4. Configure environment
 
@@ -59,21 +59,20 @@ Fill in your values:
 
 ```env
 VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_ANON_KEY=your-anon-key
-VITE_LEMONSQUEEZY_STORE_ID=your-store-id
-VITE_LEMONSQUEEZY_VARIANT_ID=your-variant-id
+VITE_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
+VITE_POLAR_PRODUCT_ID=your-product-id
 ```
 
 ### 5. Deploy Supabase Edge Function
 
 ```bash
-supabase functions deploy lemon-webhook
+supabase functions deploy polar-webhook
 ```
 
 ### 6. Run locally
 
 ```bash
-npm run dev
+bun dev
 ```
 
 ### 7. Deploy to Vercel
@@ -94,7 +93,7 @@ dotart/
 │   │   └── AuthContext.tsx
 │   ├── lib/
 │   │   ├── supabase.ts
-│   │   ├── lemonsqueezy.ts
+│   │   ├── polar.ts
 │   │   └── utils.ts
 │   ├── App.tsx          # Main app component
 │   ├── main.tsx
@@ -103,7 +102,7 @@ dotart/
 │   ├── migrations/
 │   │   └── 001_profiles.sql
 │   └── functions/
-│       └── lemon-webhook/
+│       └── polar-webhook/
 └── ...
 ```
 

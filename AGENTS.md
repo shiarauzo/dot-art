@@ -11,7 +11,7 @@ Transform images into stipple/dot art with real-time preview. Export as SVG/PNG.
 - **Frontend**: React 19 + Vite + TypeScript
 - **Styling**: Tailwind CSS 4 + shadcn/ui
 - **Auth**: Supabase
-- **Payments**: Lemon Squeezy (one-time purchase)
+- **Payments**: Polar.sh (one-time purchase)
 - **Deploy**: Vercel
 
 ## Structure
@@ -27,11 +27,11 @@ src/
 │   └── AuthContext.tsx  # Auth state + isPro check
 └── lib/
     ├── supabase.ts      # Supabase client
-    └── lemonsqueezy.ts  # Checkout URL builder
+    └── polar.ts         # Checkout URL builder
 
 supabase/
 ├── functions/
-│   └── lemon-webhook/   # Payment verification, sets is_pro=true
+│   └── polar-webhook/   # Payment verification, sets is_pro=true
 └── migrations/
     └── 001_profiles.sql # User profiles with is_pro flag
 ```
@@ -60,7 +60,6 @@ supabase/
 Required in `.env`:
 ```
 VITE_SUPABASE_URL
-VITE_SUPABASE_ANON_KEY
-VITE_LEMONSQUEEZY_STORE_ID
-VITE_LEMONSQUEEZY_VARIANT_ID
+VITE_SUPABASE_PUBLISHABLE_KEY
+VITE_POLAR_PRODUCT_ID
 ```
