@@ -1,93 +1,156 @@
 import { useEffect, useRef } from 'react'
 
+interface Dot {
+  targetX: number
+  targetY: number
+  targetRadius: number
+  distFromLight: number
+}
+
 export function HeroArt() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const dotsRef = useRef<Dot[]>([])
+  const startTimeRef = useRef(0)
+  const dimensionsRef = useRef({ width: 0, height: 0, lightX: 0, lightY: 0, lightRadius: 0 })
 
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
 
-    const ctx = canvas.getContext('2d')
+    const ctx = canvas.getContext('2d', { willReadFrequently: true })
     if (!ctx) return
 
-    const width = 500
-    const height = 400
-    canvas.width = width
-    canvas.height = height
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
 
-    // Create a flowing wave pattern that demonstrates the dot art effect
-    const dots: {
-      x: number
-      y: number
-      baseSize: number
-      phase: number
-      speed: number
-    }[] = []
+    img.onload = () => {
+      const viewportWidth = window.innerWidth
+      const aspectRatio = img.width / img.height
+      const width = viewportWidth
+      const height = Math.floor(width / aspectRatio)
 
-    const spacing = 8
+      canvas.width = width
+      canvas.height = height
 
-    for (let y = spacing / 2; y < height; y += spacing) {
-      for (let x = spacing / 2; x < width; x += spacing) {
-        dots.push({
-          x,
-          y,
-          baseSize: 1 + Math.random() * 0.5,
-          phase: Math.random() * Math.PI * 2,
-          speed: 0.3 + Math.random() * 0.7,
-        })
+      ctx.drawImage(img, 0, 0, width, height)
+      const imageData = ctx.getImageData(0, 0, width, height)
+      const data = imageData.data
+
+      // Light point (center between fingers)
+      const lightX = width * 0.5
+      const lightY = height * 0.48
+      const lightRadius = Math.min(width, height) * 0.08
+
+      dimensionsRef.current = { width, height, lightX, lightY, lightRadius }
+
+      const dotSpacing = 3
+      const dots: Dot[] = []
+
+      for (let y = dotSpacing / 2; y < height; y += dotSpacing) {
+        for (let x = dotSpacing / 2; x < width; x += dotSpacing) {
+          const i = (Math.floor(y) * width + Math.floor(x)) * 4
+          const r = data[i]
+          const g = data[i + 1]
+          const b = data[i + 2]
+          const brightness = (r + g + b) / 3 / 255
+
+          if (brightness > 0.08) {
+            const maxRadius = dotSpacing / 2 - 0.8
+            const targetRadius = Math.min(brightness, 1) * maxRadius
+
+            const distFromLight = Math.sqrt(
+              Math.pow(x - lightX, 2) + Math.pow(y - lightY, 2)
+            )
+
+            dots.push({
+              targetX: x,
+              targetY: y,
+              targetRadius,
+              distFromLight,
+            })
+          }
+        }
       }
-    }
 
-    let animationId: number
-    let time = 0
+      dotsRef.current = dots
 
-    const animate = () => {
-      ctx.fillStyle = '#000000'
-      ctx.fillRect(0, 0, width, height)
+      let animationId: number
+      startTimeRef.current = performance.now()
 
-      dots.forEach((dot) => {
-        // Create flowing wave pattern
-        const wave1 = Math.sin((dot.x * 0.02) + (dot.y * 0.01) + time * 0.5)
-        const wave2 = Math.sin((dot.x * 0.015) - (dot.y * 0.02) + time * 0.3)
-        const wave3 = Math.sin((dot.x * 0.01) + (dot.y * 0.025) - time * 0.4)
+      const animate = (currentTime: number) => {
+        const { width, height, lightX } = dimensionsRef.current
 
-        // Combine waves for organic movement
-        const combinedWave = (wave1 + wave2 + wave3) / 3
+        ctx.clearRect(0, 0, width, height)
+        ctx.fillStyle = '#fff'
 
-        // Map wave to size (0.5 to 3.5)
-        const size = dot.baseSize + (combinedWave + 1) * 1.5
+        const time = (currentTime - startTimeRef.current) / 1000
 
-        // Brightness based on wave
-        const brightness = 0.4 + (combinedWave + 1) * 0.3
+        // Pivot points for wrist animation
+        const leftWristX = width * 0.32
+        const rightWristX = width * 0.68
 
-        // Twinkle effect
-        const twinkle = Math.sin(time * dot.speed * 2 + dot.phase) * 0.1 + 0.9
-        const opacity = brightness * twinkle
+        for (const dot of dotsRef.current) {
+          // Subtle breathing effect
+          const breathe = Math.sin(time * 0.6) * 0.1 + 1
 
-        ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`
-        ctx.beginPath()
-        ctx.arc(dot.x, dot.y, size, 0, Math.PI * 2)
-        ctx.fill()
-      })
+          // Distance from center (light point)
+          const distFromCenter = Math.abs(dot.targetX - lightX) / (width * 0.5)
 
-      time += 0.02
+          // Smooth blend: 0 at light, 1 far from light
+          const centerBlend = Math.min(1, Math.max(0, (distFromCenter - 0.02) * 4))
+
+          const isLeftHand = dot.targetX < lightX
+
+          const pivotX = isLeftHand ? leftWristX : rightWristX
+          const distFromWrist = isLeftHand
+            ? dot.targetX - pivotX
+            : pivotX - dot.targetX
+
+          const fingerDist = distFromWrist / (width * 0.18)
+
+          let x = dot.targetX
+          let y = dot.targetY
+
+          // Slow, smooth wrist rotation - finger points up then down
+          const wristAngle = Math.sin(time * 0.4) * 0.15 * (isLeftHand ? 1 : -1)
+
+          if (fingerDist > 0) {
+            // Fingers rotate around wrist, pointing towards light
+            const movement = fingerDist * wristAngle * (width * 0.35) * centerBlend
+            y = dot.targetY + movement
+          } else {
+            // Arm has subtle movement
+            const armMovement = Math.sin(time * 0.3) * 2 * centerBlend
+            y = dot.targetY + armMovement
+          }
+
+          const radius = dot.targetRadius * breathe
+
+          if (radius > 0.1) {
+            ctx.beginPath()
+            ctx.arc(x, y, radius, 0, Math.PI * 2)
+            ctx.fill()
+          }
+        }
+
+        animationId = requestAnimationFrame(animate)
+      }
+
       animationId = requestAnimationFrame(animate)
+
+      return () => cancelAnimationFrame(animationId)
     }
 
-    animate()
-
-    return () => cancelAnimationFrame(animationId)
+    img.src = '/hands.avif'
   }, [])
 
   return (
     <canvas
       ref={canvasRef}
-      className="rounded-2xl border border-white/10"
+      id="hero-art-canvas"
+      className="w-full"
       style={{
-        width: '100%',
-        maxWidth: 500,
         height: 'auto',
-        aspectRatio: '500/400',
       }}
     />
   )

@@ -1,10 +1,12 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { Slider } from '@/components/ui/slider'
-import { Upload, Download, Sparkles, Code, RotateCcw, Lock, Palette, User, LogOut } from 'lucide-react'
-import { useAuth } from '@/context/AuthContext'
-import { AuthModal } from '@/components/AuthModal'
-import { getCheckoutUrl } from '@/lib/lemonsqueezy'
+import { Download, Code, RotateCcw, Palette } from 'lucide-react'
+// import { useAuth } from '@/context/AuthContext'
+// import { AuthModal } from '@/components/AuthModal'
+// import { getCheckoutUrl } from '@/lib/polar'
 import { HeroArt } from '@/components/HeroArt'
+import { SplashScreen } from '@/components/SplashScreen'
+import { DotText } from '@/components/DotText'
 
 type DotShape = 'circle' | 'square' | 'diamond' | 'star' | 'heart'
 type Preset = 'none' | 'retro' | 'newspaper' | 'sketch'
@@ -50,11 +52,13 @@ function App() {
   const [svgContent, setSvgContent] = useState<string>('')
   const [svgExport, setSvgExport] = useState<string>('')
   const [copied, setCopied] = useState<string | null>(null)
-  const [authModalOpen, setAuthModalOpen] = useState(false)
+  // const [authModalOpen, setAuthModalOpen] = useState(false)
+  const [splashComplete, setSplashComplete] = useState(false)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const { user, isPro, signOut } = useAuth()
+  // const { user, signOut } = useAuth()
+  const isPro = true // Free launch - all features unlocked
 
   const handleImageUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -64,14 +68,14 @@ function App() {
     img.src = URL.createObjectURL(file)
   }, [])
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    const file = e.dataTransfer.files[0]
-    if (!file || !file.type.startsWith('image/')) return
-    const img = new Image()
-    img.onload = () => setImage(img)
-    img.src = URL.createObjectURL(file)
-  }, [])
+  // const handleDrop = useCallback((e: React.DragEvent) => {
+  //   e.preventDefault()
+  //   const file = e.dataTransfer.files[0]
+  //   if (!file || !file.type.startsWith('image/')) return
+  //   const img = new Image()
+  //   img.onload = () => setImage(img)
+  //   img.src = URL.createObjectURL(file)
+  // }, [])
 
   const applyPreset = (preset: Preset) => {
     if (!isPro && preset !== 'none') return
@@ -228,13 +232,16 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <AuthModal open={authModalOpen} onOpenChange={setAuthModalOpen} />
+    <div className="min-h-screen bg-background relative">
+      {!splashComplete && <SplashScreen onComplete={() => setSplashComplete(true)} />}
+      {/* <AuthModal open={authModalOpen} onOpenChange={setAuthModalOpen} /> */}
 
+      <div className="block">
       {/* Nav */}
       <nav className="border-b border-border/50">
         <div className="container mx-auto px-4 h-11 flex items-center justify-between">
           <span className="text-sm font-semibold tracking-tight">dotart</span>
+          {/* Sign in commented out for free launch
           <div className="flex items-center gap-2">
             {user ? (
               <>
@@ -242,7 +249,7 @@ function App() {
                   <span className="text-[10px] font-semibold bg-foreground text-background px-1.5 py-0.5 rounded">PRO</span>
                 )}
                 <span className="text-xs text-muted-foreground hidden sm:block">{user.email}</span>
-                <button onClick={signOut} className="p-1.5 text-muted-foreground hover:text-foreground transition-colors rounded">
+                <button onClick={signOut} aria-label="Sign out" className="p-1.5 text-muted-foreground hover:text-foreground transition-colors rounded">
                   <LogOut className="w-3.5 h-3.5" />
                 </button>
               </>
@@ -252,58 +259,41 @@ function App() {
               </button>
             )}
           </div>
+          */}
         </div>
       </nav>
 
       {!image ? (
         /* ─── Upload State ─── */
-        <>
-          <header className="border-b border-border/50">
-            <div className="container mx-auto px-4 py-16 lg:py-24">
-              <div className="grid lg:grid-cols-2 gap-12 items-center">
-                <div className="text-center lg:text-left">
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-foreground/5 text-muted-foreground text-xs mb-6">
-                    <Sparkles className="w-3.5 h-3.5" />
-                    Free to use · No signup required
-                  </div>
-                  <h1 className="text-5xl lg:text-6xl font-bold tracking-tight mb-6">
-                    Transform photos into dot art
-                  </h1>
-                  <p className="text-muted-foreground text-lg mb-8 max-w-md">
-                    Upload any image and watch it transform into stipple art.
-                    Export as SVG or PNG for print, web, or anywhere.
-                  </p>
-                  <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 text-xs text-muted-foreground/50">
-                    <span className="flex items-center gap-1.5"><Download className="w-3.5 h-3.5" /> SVG & PNG</span>
-                    <span>·</span>
-                    <span className="flex items-center gap-1.5"><Palette className="w-3.5 h-3.5" /> Customizable</span>
-                    <span>·</span>
-                    <span className="flex items-center gap-1.5"><Code className="w-3.5 h-3.5" /> Code export</span>
-                  </div>
-                </div>
-                <div className="flex justify-center lg:justify-end">
-                  <HeroArt />
-                </div>
+        <div className="h-[calc(100vh-44px)] flex flex-col overflow-hidden">
+          <header className="flex-1 flex flex-col">
+            <div className="container mx-auto px-4 pt-8 text-center relative z-10">
+              <div className="flex justify-center mb-3">
+                <DotText text="Point by point" />
               </div>
+              <p className="text-muted-foreground text-lg mb-4 max-w-xl mx-auto">
+                Transform photos into pointillist art. Ready for print or web.
+              </p>
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="px-8 py-3 text-sm font-medium bg-foreground text-background rounded-none cursor-pointer hover:bg-foreground/90 hover:scale-105 active:scale-95 transition-all duration-150 mb-3"
+              >
+                Try it
+              </button>
+              <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+              <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground/50 mb-2">
+                <span className="flex items-center gap-1.5"><Download className="w-3.5 h-3.5" /> SVG & PNG</span>
+                <span>·</span>
+                <span className="flex items-center gap-1.5"><Palette className="w-3.5 h-3.5" /> Customizable</span>
+                <span>·</span>
+                <span className="flex items-center gap-1.5"><Code className="w-3.5 h-3.5" /> Code export</span>
+              </div>
+            </div>
+            <div className="flex-1 w-full overflow-hidden -mt-32 relative z-0">
+              <HeroArt />
             </div>
           </header>
-
-          <main className="container mx-auto px-4 py-14">
-            <div
-              className="border border-dashed border-border rounded-xl p-16 text-center cursor-pointer hover:border-border/80 hover:bg-foreground/[0.02] transition-all flex flex-col items-center max-w-lg mx-auto"
-              onDrop={handleDrop}
-              onDragOver={(e) => e.preventDefault()}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <div className="w-11 h-11 rounded-full bg-foreground/5 flex items-center justify-center mb-4">
-                <Upload className="w-5 h-5 text-muted-foreground" />
-              </div>
-              <p className="text-sm font-medium mb-1">Drop an image here</p>
-              <p className="text-xs text-muted-foreground/50">or click to browse · PNG, JPG, WebP</p>
-              <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
-            </div>
-          </main>
-        </>
+        </div>
       ) : (
         /* ─── Editor State ─── */
         <main className="container mx-auto px-4 py-6">
@@ -368,8 +358,7 @@ function App() {
                   {/* Divider */}
                   <div className="border-t border-border/40 pt-1">
                     <div className="flex items-center gap-1.5 mb-3">
-                      <span className="text-[10px] uppercase tracking-widest font-medium text-muted-foreground/30">Pro</span>
-                      {!isPro && <Lock className="w-2.5 h-2.5 text-muted-foreground/25" />}
+                      <span className="text-[10px] uppercase tracking-widest font-medium text-muted-foreground/30">Advanced</span>
                     </div>
 
                     {/* Presets */}
@@ -456,7 +445,7 @@ function App() {
                             key={shape}
                             disabled={!isPro}
                             onClick={() => setSettings(s => ({ ...s, dotShape: shape }))}
-                            title={shape}
+                            aria-label={shape}
                             className={`flex-1 py-1.5 rounded text-sm transition-colors disabled:opacity-25 disabled:cursor-not-allowed ${
                               settings.dotShape === shape
                                 ? 'bg-foreground text-background'
@@ -512,7 +501,7 @@ function App() {
                     </div>
                   </div>
 
-                  {/* Pro upsell */}
+                  {/* Pro upsell - commented out for free launch
                   {!isPro && (
                     <div className="border-t border-border/40 pt-4 space-y-2">
                       <p className="text-[11px] text-muted-foreground/40 leading-relaxed">
@@ -526,6 +515,7 @@ function App() {
                       </button>
                     </div>
                   )}
+                  */}
                 </div>
               </div>
 
@@ -568,6 +558,21 @@ function App() {
           </div>
         </main>
       )}
+      </div>
+
+      <footer className="absolute bottom-4 left-0 right-0 text-center pointer-events-none">
+        <span className="text-xs text-muted-foreground/40">
+          made by{' '}
+          <a
+            href="https://shiara.design"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-muted-foreground transition-colors pointer-events-auto"
+          >
+            shiara arauzo
+          </a>
+        </span>
+      </footer>
     </div>
   )
 }

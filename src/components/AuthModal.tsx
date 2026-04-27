@@ -38,13 +38,9 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
     if (error) {
       setError(error.message)
     } else {
-      if (mode === 'signup') {
-        setError('Check your email to confirm your account!')
-      } else {
-        onOpenChange(false)
-        setEmail('')
-        setPassword('')
-      }
+      onOpenChange(false)
+      setEmail('')
+      setPassword('')
     }
   }
 
@@ -89,7 +85,7 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
           </div>
 
           {error && (
-            <p className={`text-sm ${error.includes('Check your email') ? 'text-green-500' : 'text-destructive'}`}>
+            <p role="alert" className={`text-sm ${error.includes('Check your email') ? 'text-green-500' : 'text-destructive'}`}>
               {error}
             </p>
           )}
