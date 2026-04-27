@@ -1,9 +1,9 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { Slider } from '@/components/ui/slider'
-import { Download, Code, RotateCcw, Lock, Palette, User, LogOut } from 'lucide-react'
-import { useAuth } from '@/context/AuthContext'
-import { AuthModal } from '@/components/AuthModal'
-import { getCheckoutUrl } from '@/lib/polar'
+import { Download, Code, RotateCcw, Palette } from 'lucide-react'
+// import { useAuth } from '@/context/AuthContext'
+// import { AuthModal } from '@/components/AuthModal'
+// import { getCheckoutUrl } from '@/lib/polar'
 import { HeroArt } from '@/components/HeroArt'
 import { SplashScreen } from '@/components/SplashScreen'
 import { DotText } from '@/components/DotText'
@@ -52,12 +52,12 @@ function App() {
   const [svgContent, setSvgContent] = useState<string>('')
   const [svgExport, setSvgExport] = useState<string>('')
   const [copied, setCopied] = useState<string | null>(null)
-  const [authModalOpen, setAuthModalOpen] = useState(false)
+  // const [authModalOpen, setAuthModalOpen] = useState(false)
   const [splashComplete, setSplashComplete] = useState(false)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const { user, signOut } = useAuth()
+  // const { user, signOut } = useAuth()
   const isPro = true // Free launch - all features unlocked
 
   const handleImageUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -68,14 +68,14 @@ function App() {
     img.src = URL.createObjectURL(file)
   }, [])
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    const file = e.dataTransfer.files[0]
-    if (!file || !file.type.startsWith('image/')) return
-    const img = new Image()
-    img.onload = () => setImage(img)
-    img.src = URL.createObjectURL(file)
-  }, [])
+  // const handleDrop = useCallback((e: React.DragEvent) => {
+  //   e.preventDefault()
+  //   const file = e.dataTransfer.files[0]
+  //   if (!file || !file.type.startsWith('image/')) return
+  //   const img = new Image()
+  //   img.onload = () => setImage(img)
+  //   img.src = URL.createObjectURL(file)
+  // }, [])
 
   const applyPreset = (preset: Preset) => {
     if (!isPro && preset !== 'none') return
@@ -234,7 +234,7 @@ function App() {
   return (
     <div className="min-h-screen bg-background relative">
       {!splashComplete && <SplashScreen onComplete={() => setSplashComplete(true)} />}
-      <AuthModal open={authModalOpen} onOpenChange={setAuthModalOpen} />
+      {/* <AuthModal open={authModalOpen} onOpenChange={setAuthModalOpen} /> */}
 
       <div className="block">
       {/* Nav */}
