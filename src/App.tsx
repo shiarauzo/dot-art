@@ -289,7 +289,7 @@ function App() {
                 <span className="flex items-center gap-1.5"><Code className="w-3.5 h-3.5" /> Code export</span>
               </div>
             </div>
-            <div className="flex-1 w-full overflow-hidden -mt-32 relative z-0">
+            <div className="flex-1 w-full overflow-hidden -mt-8 md:-mt-20 lg:-mt-32 relative z-0">
               <HeroArt />
             </div>
           </header>

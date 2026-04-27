@@ -43,7 +43,9 @@ export function HeroArt() {
 
       dimensionsRef.current = { width, height, lightX, lightY, lightRadius }
 
-      const dotSpacing = 3
+      // Responsive dot spacing - smaller dots on larger viewports
+      const baseSpacing = 3
+      const dotSpacing = Math.max(2, baseSpacing * (1000 / viewportWidth))
       const dots: Dot[] = []
 
       for (let y = dotSpacing / 2; y < height; y += dotSpacing) {
@@ -55,7 +57,7 @@ export function HeroArt() {
           const brightness = (r + g + b) / 3 / 255
 
           if (brightness > 0.08) {
-            const maxRadius = dotSpacing / 2 - 0.8
+            const maxRadius = dotSpacing / 2 - 0.5
             const targetRadius = Math.min(brightness, 1) * maxRadius
 
             const distFromLight = Math.sqrt(
@@ -112,17 +114,19 @@ export function HeroArt() {
           let y = dot.targetY
 
           // Slow, smooth wrist rotation - finger points up then down
-          const wristAngle = Math.sin(time * 0.4) * 0.15 * (isLeftHand ? 1 : -1)
+          const wristAngle = Math.sin(time * 0.4) * 0.12 * (isLeftHand ? 1 : -1)
 
-          if (fingerDist > 0) {
-            // Fingers rotate around wrist, pointing towards light
-            const movement = fingerDist * wristAngle * (width * 0.35) * centerBlend
-            y = dot.targetY + movement
-          } else {
-            // Arm has subtle movement
-            const armMovement = Math.sin(time * 0.3) * 2 * centerBlend
-            y = dot.targetY + armMovement
-          }
+          // Smooth blend between arm and finger movement (no hard cutoff)
+          const fingerBlend = Math.max(0, Math.min(1, fingerDist * 2))
+          const armBlend = 1 - fingerBlend
+
+          // Finger movement (stronger near fingertips)
+          const fingerMovement = fingerDist * wristAngle * (width * 0.3) * centerBlend * fingerBlend
+
+          // Arm movement (subtle, affects whole arm smoothly)
+          const armMovement = Math.sin(time * 0.3) * 1.5 * centerBlend * armBlend
+
+          y = dot.targetY + fingerMovement + armMovement
 
           const radius = dot.targetRadius * breathe
 
