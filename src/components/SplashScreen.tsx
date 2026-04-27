@@ -78,9 +78,9 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
         return
       }
 
-      ctx.fillStyle = '#F5F3EE'
+      ctx.fillStyle = '#000'
       ctx.fillRect(0, 0, screenWidth, screenHeight)
-      ctx.fillStyle = '#1A1A1A'
+      ctx.fillStyle = '#fff'
 
       for (const dot of dots) {
         const dotElapsed = elapsed - dot.delay
@@ -122,7 +122,7 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
   return (
     <canvas
       ref={canvasRef}
-      className={`fixed inset-0 z-50 bg-[#F5F3EE] transition-opacity duration-500 ease-out ${
+      className={`fixed inset-0 z-50 bg-black transition-opacity duration-500 ease-out ${
         fading ? 'opacity-0' : 'opacity-100'
       }`}
     />

@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AsciiHero } from '@/components/AsciiHero'
+import { HeroArt } from '@/components/HeroArt'
 import { SplashScreen } from '@/components/SplashScreen'
 
 function App() {
@@ -22,18 +22,20 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F3EE] relative overflow-hidden">
+    <div className="min-h-screen bg-background relative overflow-hidden">
       {!splashComplete && <SplashScreen onComplete={() => setSplashComplete(true)} />}
 
-      {/* ASCII art background */}
-      <AsciiHero />
+      {/* Fullscreen dot-art background */}
+      <div className="absolute inset-0 opacity-20">
+        <HeroArt />
+      </div>
 
       {/* Content overlay */}
       <div className="relative z-10 min-h-screen flex flex-col">
         {/* Top title */}
-        <header className="pt-6 md:pt-8 px-6">
-          <h1 className="text-center text-sm md:text-base tracking-[0.4em] lowercase font-mono text-neutral-800">
-            point art app
+        <header className="pt-8 md:pt-12 px-4">
+          <h1 className="text-center text-sm md:text-base tracking-[0.3em] uppercase text-muted-foreground/60">
+            Point Art app
           </h1>
         </header>
 
@@ -43,10 +45,10 @@ function App() {
             onClick={() => fileInputRef.current?.click()}
             className="group cursor-pointer text-center"
           >
-            <span className="block text-5xl md:text-7xl lg:text-[6rem] font-serif font-normal tracking-tight text-neutral-900 group-hover:opacity-70 transition-opacity lowercase">
-              try it free
+            <span className="block text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight text-foreground group-hover:opacity-80 transition-opacity">
+              Try it free
             </span>
-            <span className="block mt-1 text-lg md:text-xl font-mono text-neutral-500 group-hover:text-neutral-700 transition-colors lowercase tracking-wider">
+            <span className="block mt-2 text-lg md:text-xl text-muted-foreground/50 group-hover:text-muted-foreground/70 transition-colors">
               click to upload
             </span>
           </button>
@@ -59,31 +61,19 @@ function App() {
           />
         </main>
 
-        {/* Corner labels */}
-        <footer className="absolute bottom-0 left-0 right-0 px-6 pb-6">
-          <div className="flex justify-between items-end">
-            <div className="space-y-1">
-              <p className="text-xs font-mono text-neutral-600 lowercase tracking-wide">svg export</p>
-              <p className="text-xs font-mono text-neutral-600 lowercase tracking-wide">png export</p>
-            </div>
-            <div className="text-center">
-              <span className="text-[10px] font-mono text-neutral-400 lowercase">
-                made by{' '}
-                <a
-                  href="https://shiara.design"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-neutral-600 transition-colors"
-                >
-                  shiara arauzo
-                </a>
-              </span>
-            </div>
-            <div className="space-y-1 text-right">
-              <p className="text-xs font-mono text-neutral-600 lowercase tracking-wide">custom colors</p>
-              <p className="text-xs font-mono text-neutral-600 lowercase tracking-wide">ai background removal</p>
-            </div>
-          </div>
+        {/* Footer */}
+        <footer className="pb-6 text-center">
+          <span className="text-xs text-muted-foreground/40">
+            made by{' '}
+            <a
+              href="https://shiara.design"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-muted-foreground transition-colors"
+            >
+              shiara arauzo
+            </a>
+          </span>
         </footer>
       </div>
     </div>
