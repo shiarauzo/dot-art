@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { Slider } from '@/components/ui/slider'
-import { Download, RotateCcw } from 'lucide-react'
+import { Download, X, Upload } from 'lucide-react'
 import { removeBackground } from '@imgly/background-removal'
 import { LoadingDots } from '@/components/LoadingDots'
 
@@ -37,13 +37,14 @@ const DEFAULT_SETTINGS: DotArtSettings = {
 export function ArtGenerator() {
   const [image, setImage] = useState<HTMLImageElement | null>(null)
   const [originalDataUrl, setOriginalDataUrl] = useState<string | null>(null)
+  const [originalFileName, setOriginalFileName] = useState<string>('image')
   const [settings, setSettings] = useState<DotArtSettings>(DEFAULT_SETTINGS)
   const [svgContent, setSvgContent] = useState<string>('')
   const [svgExport, setSvgExport] = useState<string>('')
-  const [isProcessing, setIsProcessing] = useState(true)
+  const [isProcessing, setIsProcessing] = useState(false)
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const hasCheckedPendingImage = useRef(false)
-  const navigate = useNavigate()
 
   const isPro = true // Free launch - all features unlocked
 
@@ -89,14 +90,20 @@ export function ArtGenerator() {
     hasCheckedPendingImage.current = true
 
     const pendingImage = sessionStorage.getItem('pendingImage')
+    const pendingFileName = sessionStorage.getItem('pendingFileName')
     if (pendingImage) {
       sessionStorage.removeItem('pendingImage')
+      sessionStorage.removeItem('pendingFileName')
       setOriginalDataUrl(pendingImage)
+      if (pendingFileName) {
+        // Remove extension from filename
+        const nameWithoutExt = pendingFileName.replace(/\.[^/.]+$/, '')
+        setOriginalFileName(nameWithoutExt)
+      }
       processImage(pendingImage, settings.removeBackground)
-    } else {
-      navigate('/')
     }
-  }, [processImage, navigate, settings.removeBackground])
+    // Don't redirect - show empty state instead
+  }, [processImage, settings.removeBackground])
 
   // Reprocess when removeBackground toggle changes
   useEffect(() => {
@@ -311,7 +318,9 @@ export function ArtGenerator() {
     const blob = new Blob([svgExport], { type: 'image/svg+xml' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
-    a.href = url; a.download = 'dotart.svg'; a.click()
+    a.href = url
+    a.download = `${originalFileName}_dotart.svg`
+    a.click()
     URL.revokeObjectURL(url)
   }
 
@@ -320,7 +329,8 @@ export function ArtGenerator() {
     const img = new Image()
     img.onload = () => {
       const canvas = document.createElement('canvas')
-      canvas.width = img.width; canvas.height = img.height
+      canvas.width = img.width
+      canvas.height = img.height
       const ctx = canvas.getContext('2d')
       if (!ctx) return
       ctx.drawImage(img, 0, 0)
@@ -328,15 +338,40 @@ export function ArtGenerator() {
         if (!blob) return
         const url = URL.createObjectURL(blob)
         const a = document.createElement('a')
-        a.href = url; a.download = 'dotart.png'; a.click()
+        a.href = url
+        a.download = `${originalFileName}_dotart.png`
+        a.click()
         URL.revokeObjectURL(url)
       }, 'image/png')
     }
     img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgExport)))
   }
 
-  const resetImage = () => {
-    navigate('/')
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const nameWithoutExt = file.name.replace(/\.[^/.]+$/, '')
+    setOriginalFileName(nameWithoutExt)
+
+    const reader = new FileReader()
+    reader.onload = () => {
+      const dataUrl = reader.result as string
+      setOriginalDataUrl(dataUrl)
+      processImage(dataUrl, settings.removeBackground)
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const clearImage = () => {
+    setImage(null)
+    setOriginalDataUrl(null)
+    setSvgContent('')
+    setSvgExport('')
+    setOriginalFileName('image')
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
   }
 
   return (
@@ -350,55 +385,70 @@ export function ArtGenerator() {
       </nav>
 
       <main className="container mx-auto px-4 py-6">
-        <div className="grid lg:grid-cols-[1fr_272px] border border-border/40 rounded-xl overflow-hidden min-h-[600px]">
-            <div className="overflow-hidden p-4">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleFileSelect}
+          className="hidden"
+        />
+        <div className="grid lg:grid-cols-[1fr_272px] border border-border/40 overflow-hidden min-h-[600px]">
+            <div className="overflow-hidden p-8 relative">
               {isProcessing ? (
                 <div className="flex items-center justify-center min-h-[400px] w-full">
                   <LoadingDots />
                 </div>
               ) : svgContent ? (
-                <div
-                  className="flex items-start justify-center [&>svg]:max-w-full [&>svg]:max-h-[80vh] [&>svg]:w-auto [&>svg]:h-auto"
-                  dangerouslySetInnerHTML={{ __html: svgContent }}
-                />
+                <>
+                  <button
+                    onClick={clearImage}
+                    className="absolute top-4 left-4 w-8 h-8 flex items-center justify-center bg-background/80 hover:bg-background border border-border/40 transition-colors z-10"
+                  >
+                    <X className="w-4 h-4 text-muted-foreground" />
+                  </button>
+                  <div
+                    className="flex items-start justify-center [&>svg]:max-w-full [&>svg]:max-h-[80vh] [&>svg]:w-auto [&>svg]:h-auto"
+                    dangerouslySetInnerHTML={{ __html: svgContent }}
+                  />
+                </>
               ) : (
-                <span className="text-xs text-muted-foreground/30">Generating...</span>
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex flex-col items-center justify-center min-h-[400px] w-full cursor-pointer border border-dashed border-border/40 hover:border-border/80 transition-colors"
+                >
+                  <Upload className="w-8 h-8 text-muted-foreground/30 mb-3" />
+                  <span className="text-sm text-muted-foreground/50">Upload an image</span>
+                  <span className="text-xs text-muted-foreground/30 mt-1">Click to select</span>
+                </div>
               )}
               <canvas ref={canvasRef} className="hidden" />
             </div>
 
             <div className="border-l border-border/40 flex flex-col">
-              <div className="px-4 py-2.5 border-b border-border/40 flex items-center justify-between">
+              <div className="px-4 py-2.5 border-b border-border/40">
                 <span className="text-[11px] tabular-nums text-muted-foreground/40">
-                  {image ? `${image.naturalWidth}×${image.naturalHeight}` : ''}
+                  {image ? `${image.naturalWidth}×${image.naturalHeight}` : '—'}
                 </span>
-                <button
-                  onClick={resetImage}
-                  disabled={isProcessing}
-                  className="flex items-center gap-1 text-[11px] text-muted-foreground/40 hover:text-muted-foreground transition-colors disabled:opacity-30"
-                >
-                  <RotateCcw className="w-3 h-3" /> New image
-                </button>
               </div>
 
               <div className="flex-1 overflow-y-auto">
                 <div className="p-4 space-y-5">
 
                   {/* Background removal - primary toggle */}
-                  <div className="flex items-center justify-between">
+                  <div className={`flex items-center justify-between ${!image ? 'opacity-50 pointer-events-none' : ''}`}>
                     <div>
                       <label className="text-xs text-muted-foreground block">Remove background</label>
                       <span className="text-[10px] text-muted-foreground/40">AI-powered isolation</span>
                     </div>
                     <button
                       onClick={() => setSettings(s => ({ ...s, removeBackground: !s.removeBackground }))}
-                      disabled={isProcessing}
-                      className={`relative w-10 h-6 rounded-full transition-colors disabled:opacity-50 ${
+                      disabled={isProcessing || !image}
+                      className={`relative w-10 h-6 transition-colors disabled:opacity-50 ${
                         settings.removeBackground ? 'bg-foreground' : 'bg-foreground/20'
                       }`}
                     >
                       <span
-                        className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-background transition-transform ${
+                        className={`absolute top-1 left-1 w-4 h-4 bg-background transition-transform ${
                           settings.removeBackground ? 'translate-x-4' : 'translate-x-0'
                         }`}
                       />
@@ -406,16 +456,16 @@ export function ArtGenerator() {
                   </div>
 
                   {/* Shape selector - visual first */}
-                  <div className={`space-y-2 ${isProcessing ? 'opacity-50 pointer-events-none' : ''}`}>
+                  <div className={`space-y-2 ${isProcessing || !image ? 'opacity-50 pointer-events-none' : ''}`}>
                     <label className="text-xs text-muted-foreground">Shape</label>
                     <div className="flex gap-1.5">
                       {(['circle', 'square', 'diamond', 'star', 'heart'] as DotShape[]).map(shape => (
                         <button
                           key={shape}
                           onClick={() => setSettings(s => ({ ...s, dotShape: shape }))}
-                          disabled={isProcessing}
+                          disabled={isProcessing || !image}
                           title={shape}
-                          className={`flex-1 py-2 rounded-lg text-base transition-all ${
+                          className={`flex-1 py-2 text-base transition-all ${
                             settings.dotShape === shape
                               ? 'bg-foreground text-background scale-105'
                               : 'bg-foreground/5 text-muted-foreground/60 hover:bg-foreground/10 hover:text-muted-foreground'
@@ -456,12 +506,12 @@ export function ArtGenerator() {
                   </div>
 
                   {/* Dot color */}
-                  <div className={`flex items-center gap-2 ${isProcessing ? 'opacity-50 pointer-events-none' : ''}`}>
+                  <div className={`flex items-center gap-2 ${isProcessing || !image ? 'opacity-50 pointer-events-none' : ''}`}>
                     <input
                       type="color" value={settings.dotColor}
                       onChange={(e) => setSettings(s => ({ ...s, dotColor: e.target.value }))}
-                      disabled={isProcessing}
-                      className="w-8 h-8 rounded-lg cursor-pointer bg-transparent border border-border/40 p-0.5 outline-none"
+                      disabled={isProcessing || !image}
+                      className="w-8 h-8 cursor-pointer bg-transparent border border-border/40 p-0.5 outline-none"
                     />
                     <span className="text-xs text-muted-foreground/60">Color</span>
                   </div>
@@ -506,7 +556,7 @@ export function ArtGenerator() {
                         <button
                           key={scale}
                           onClick={() => setSettings(s => ({ ...s, exportScale: scale }))}
-                          className={`w-8 h-7 rounded text-[11px] transition-colors ${
+                          className={`w-8 h-7 text-[11px] transition-colors ${
                             settings.exportScale === scale
                               ? 'bg-foreground text-background'
                               : 'bg-foreground/5 text-muted-foreground/60 hover:bg-foreground/10'
@@ -521,13 +571,13 @@ export function ArtGenerator() {
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       onClick={downloadSVG}
-                      className="py-2.5 text-xs font-medium text-muted-foreground bg-foreground/5 hover:bg-foreground/10 rounded-lg transition-colors flex items-center justify-center gap-1.5"
+                      className="py-2.5 text-xs font-medium text-muted-foreground bg-foreground/5 hover:bg-foreground/10 transition-colors flex items-center justify-center gap-1.5"
                     >
                       <Download className="w-3.5 h-3.5" /> SVG
                     </button>
                     <button
                       onClick={downloadPNG}
-                      className="py-2.5 text-xs font-medium bg-foreground text-background hover:bg-foreground/90 rounded-lg transition-colors flex items-center justify-center gap-1.5"
+                      className="py-2.5 text-xs font-medium bg-foreground text-background hover:bg-foreground/90 transition-colors flex items-center justify-center gap-1.5"
                     >
                       <Download className="w-3.5 h-3.5" /> PNG
                     </button>

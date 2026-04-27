@@ -18,6 +18,7 @@ function App() {
     const reader = new FileReader()
     reader.onload = () => {
       sessionStorage.setItem('pendingImage', reader.result as string)
+      sessionStorage.setItem('pendingFileName', file.name)
       navigate('/art-generator')
     }
     reader.readAsDataURL(file)
