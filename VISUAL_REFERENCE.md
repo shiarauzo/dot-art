@@ -1,19 +1,19 @@
-# Visual Style Reference: Halftone Portrait
+# Visual Style Reference: Technology Exposition 2022 Poster
 
 ---
 
 ## 1. Core Aesthetic
 
-**Style Name:** **Scanline Halftone / Digital Stippling**
+**Style Name:** **ASCII-Brutalist Tech Poster**
 
-**Design Philosophy:** Transform photographic imagery into rhythmic dot patterns arranged in horizontal scanlines, creating a retro-digital hybrid that bridges analog print techniques with CRT monitor aesthetics.
+**Design Philosophy:** Merging raw computational aesthetics with traditional typographic hierarchy to create a poster that embodies the intersection of human and machine communication.
 
 **Key Influences:**
-- Classic newspaper halftone printing
-- CRT television scanlines
-- ASCII art / text-based imagery
-- 1980s computer graphics
-- Scientific/thermal imaging visualization
+- ASCII art / text-based graphics from early computing
+- Brutalist typography
+- Monospace terminal aesthetics
+- Swiss poster design (grid structure)
+- Halftone printing techniques (translated to character density)
 
 ---
 
@@ -21,131 +21,134 @@
 
 | Color Name | Hex Code | Usage Context |
 |------------|----------|---------------|
-| **Pure Black** | `#000000` | Background, silhouette areas, negative space |
-| **Bright White** | `#FFFFFF` | Primary dot color, maximum luminance points |
-| **Mid Gray** | `#888888` | Transitional dots, medium tones |
-| **Dim White** | `#CCCCCC` | Subtle highlight dots, texture fill |
-| **Near Black** | `#1A1A1A` | Slight ambient glow in dark areas |
+| Paper White | `#F5F5F5` | Background, negative space |
+| Charcoal Black | `#1A1A1A` | ASCII characters, primary text |
+| Mid Gray | `#666666` | ASCII art mid-tones, text shadows |
+| Light Gray | `#AAAAAA` | ASCII art highlights, sparse areas |
 
-**Total Color Count:** 2 primary (black/white) with grayscale gradation achieved through dot density and size variation
+**Total Colors:** 4 (monochromatic grayscale)
 
-**Notable:** This is a **strictly monochromatic** palette. All tonal variation comes from:
-- Dot size (larger = brighter)
-- Dot spacing (denser = brighter)
-- Dot presence/absence
+**Note:** The "color" in this design comes entirely from character density and spacing.
 
 ---
 
 ## 3. Typography System
 
-*Not applicable* — This is a purely visual/graphic piece without text elements.
+### Headline Typography (Event Date) — KEY REFERENCE
+- **Font Family:** Serif, **Times New Roman** or similar traditional serif
+- **Weight:** Bold/Black
+- **Case:** Lowercase
+- **Size:** Large (~48-60pt equivalent)
+- **Treatment:** Solid black fill with **subtle drop shadow**
+- **Shadow:** Offset approximately 2-3px down-right, lighter gray tone
 
-**If incorporating text in this style:**
-- Recommend: **Monospace fonts** (IBM Plex Mono, JetBrains Mono)
-- Weight: Medium to Bold for visibility
-- Treatment: Could be rendered as dot-matrix style
-- Consider: Scanline overlay effect on text
+**Example Text:** "september 10th" / "10am-4pm"
+
+### Title Typography (Event Name)
+- **Font Family:** Monospace terminal font (Courier-style)
+- **Weight:** Regular
+- **Case:** Lowercase
+
+### Hierarchy Structure
+1. **Primary:** Event date/time (serif, bold, largest)
+2. **Secondary:** Event title (monospace, top)
+3. **Tertiary:** Category labels (monospace, small, scattered)
+4. **Background:** ASCII art illustration
 
 ---
 
 ## 4. Key Design Elements
 
-### Textures and Treatments
+### Text Shadow Effect (KEY FEATURE for "september 10th")
+- **Application:** "september 10th" and "10am-4pm" text
+- **Offset:** ~3-4 pixels down and right
+- **Color:** Mid gray (~40% opacity of main text)
+- **Style:** Hard-edged shadow, NOT blurred
+- **Dot Size:** Shadow dots are **smaller** than main text dots (~50-60%)
+- **Purpose:** Creates depth, separates text from busy background
 
-**Horizontal Scanline Structure**
-- Dots arranged in strict horizontal rows
-- Consistent vertical spacing (~4-5px between rows)
-- Creates characteristic "CRT" / "thermal print" aesthetic
-- Horizontal bands create visual rhythm
-
-**Dot Variation System**
-- **Size:** 1-3px diameter based on brightness
-- **Opacity:** Varies from 40% to 100%
-- **Spacing:** 3-5px horizontal gaps within rows
-- **Irregularity:** Slight randomization for organic feel
-
-**Silhouette Technique**
-- Dark areas = absence of dots (pure black negative space)
-- Creates strong contrast between subject and background
-- Subject emerges from the dot field rather than being drawn
-
-### Graphic Elements
-
-**Dot Characteristics:**
-- Shape: Perfect circles
-- No connecting lines
-- Uniform color (white only)
-- Size determines perceived brightness
-
-**Negative Space:**
-- Large black silhouette areas define the subject
-- Subject appears as a "void" in the dot field
-- Background is the active element (dots), foreground is passive (absence)
+### ASCII Art Illustration
+- **Subject:** Human figure (astronaut/person)
+- **Technique:** Variable character density creates grayscale
+- **Characters Used:** `8`, `0`, `@`, `#`, `:`, `.`, space
+- **Density Mapping:**
+  - Dark areas: `8`, `@`, `#`, `%`
+  - Mid-tones: `o`, `0`, `c`, `v`
+  - Light areas: `.`, `:`, space
 
 ### Layout Structure
-
-**Composition:**
-- Subject positioned left-of-center
-- Looking/pointing toward right side
-- Creates visual flow and implied motion
-- Asymmetrical balance
-
-**Figure-Ground Relationship:**
-- Inverted from traditional: background (dots) is detailed, subject (silhouette) is solid
-- Subject: Person holding/looking through camera or binoculars
-- Strong profile/three-quarter view silhouette
+```
+┌─────────────────────────────────────┐
+│ [Title: technology exposition 2022] │
+├─────────────────────────────────────┤
+│         [ASCII ART FIGURE]          │
+│                                     │
+│              "september 10th"       │  ← SERIF + SHADOW
+│                "10am-4pm"           │
+├─────────────────────────────────────┤
+│ [labels at bottom corners]          │
+└─────────────────────────────────────┘
+```
 
 ### Unique Stylistic Choices
-
-1. **Uniform Row Height:** All dots on same horizontal line regardless of content
-2. **No Anti-aliasing:** Hard edges on silhouette create digital sharpness
-3. **Density = Value:** Brightness is purely a function of dot coverage
-4. **Rhythmic Consistency:** The horizontal banding creates a hypnotic, almost meditative quality
-5. **Detail in Periphery:** More dot activity at edges, creating frame-like effect
+1. **Serif vs Monospace Contrast:** Elegant serif date against raw ASCII
+2. **Text Shadow Integration:** Shadow made with same dot technique as background
+3. **Lowercase Only:** All text in lowercase for modern cohesion
 
 ---
 
 ## 5. Visual Concept
 
 ### Conceptual Bridge
-This design bridges **analog photography** with **digital rendering**—a person capturing an image through a lens, themselves being captured and rendered through a digital dot-matrix process. It's meta-commentary on image-making and reproduction.
-
-### Relationship Between Elements
-- **Dots (light)** = Information, visibility, the captured
-- **Silhouette (dark)** = The observer, the one capturing
-- **Horizontal lines** = The scanning process, digitization, time
-- **Overall effect** = Surveillance aesthetic, thermal imaging, scientific observation
+The design bridges **human artistry** and **machine language** by using ASCII characters to render a human figure—a visual metaphor for technology serving humanity.
 
 ### Ideal Use Cases
-- **Tech/Photography apps** — Perfect for image processing tools
-- **Creative tool landing pages** — Demonstrates transformation capability
-- **Music/Album artwork** — Retro-digital aesthetic
-- **Film/Video production branding** — Scanline reference
-- **Developer portfolios** — Technical aesthetic appeal
-- **Scientific visualization tools** — Data-to-image reference
+- Tech conference/exposition posters
+- Developer/hacker meetups
+- Creative coding project landing pages
+- AI/ML themed events
 
 ---
 
-## Implementation Notes
+## 6. Implementation Notes for "try it free" Text
 
-### For Canvas/Code Recreation
+### To Recreate the "september 10th" Style:
 
+**1. Font Selection:**
+- Use a **serif font**: `Times New Roman`, `Georgia`, or `Playfair Display`
+- Weight: **Bold** (700+)
+- Style: **Lowercase only**
+
+**2. Shadow Implementation (CRITICAL):**
+- Offset: **4-6 pixels** down-right diagonal
+- Shadow rendered with **smaller dots** (~50-60% size of main)
+- Shadow opacity: **30-40%** (`rgba(255,255,255,0.35)`)
+- Shadow renders **BEFORE** main text (painter's algorithm)
+
+**3. Dot Art Conversion:**
+- Main text: Full white dots (`#FFFFFF`), full size
+- Shadow: Smaller gray dots, offset position
+- Dot spacing: 2.5-3px
+
+**4. Current Problem:**
+- "try it free" uses **sans-serif** font (Science Gothic)
+- Shadow not visible or not implemented correctly
+- Need to switch to **serif** font family
+
+### Code Changes Required:
+```javascript
+// Font: Change from sans-serif to serif
+ctx.font = `bold ${fontSize}px "Times New Roman", Georgia, serif`
+
+// Shadow offset: Increase for visibility
+const shadowOffset = 5 * size  // was 3
+
+// Shadow opacity: Make more visible
+ctx.fillStyle = 'rgba(255, 255, 255, 0.35)'  // was 0.25
+
+// Shadow dot size: Slightly larger
+const radius = shadowBrightness * maxRadius * 0.6  // was 0.55
 ```
-Settings to achieve this effect:
-- Row spacing: 4px
-- Dot spacing: 4px
-- Max dot size: 2.5px
-- Min dot size: 1px
-- Brightness threshold: 0.15 (below = no dot)
-- Animation: Subtle opacity flicker (±15%)
-- Flicker speed: Varied per dot (0.5-2.5 multiplier)
-```
-
-### Animation Recommendations
-- **Twinkle effect:** Individual dots fade in/out at different rates
-- **Speed:** Subtle, not distracting (0.02 time increment)
-- **Pattern:** Sine wave oscillation for organic feel
-- **Range:** 70%-100% opacity variance
 
 ---
 
@@ -153,9 +156,11 @@ Settings to achieve this effect:
 
 | Aspect | Value |
 |--------|-------|
-| Primary Colors | Black `#000000`, White `#FFFFFF` |
-| Dot Spacing | 4px horizontal, 4px vertical |
-| Dot Size Range | 1-2.5px |
-| Style | Scanline Halftone |
-| Mood | Technical, Observational, Retro-Digital |
-| Best For | Image tools, Tech products, Creative apps |
+| Font Family | Times New Roman, Georgia, serif |
+| Font Weight | Bold (700) |
+| Text Case | lowercase |
+| Shadow Offset | 4-6px down-right |
+| Shadow Opacity | 35-40% |
+| Shadow Dot Size | 50-60% of main |
+| Main Dot Color | `#FFFFFF` |
+| Style | ASCII-Brutalist |
