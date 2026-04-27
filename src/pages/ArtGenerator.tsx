@@ -374,8 +374,8 @@ export function ArtGenerator() {
       {/* Navigation */}
       <nav className="border-b border-neutral-800">
         <div className="container mx-auto px-4 h-14 flex items-center justify-between">
-          <Link to="/" className="hover:opacity-80 transition-opacity">
-            <DotText text="dotart" size={0.8} dotDensity={2} color="#a0d8e8" shadowColor="#2a4a52" />
+          <Link to="/" className="hover:opacity-80 transition-opacity" style={{ filter: 'drop-shadow(0 0 6px rgba(120, 200, 220, 0.3))' }}>
+            <DotText text="HALFTONE ART" size={0.9} dotDensity={2.5} color="#a0d8e8" shadowColor="#2a4a52" />
           </Link>
           <span className="text-[10px] font-mono text-neutral-600 uppercase tracking-widest">
             generator
