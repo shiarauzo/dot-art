@@ -133,3 +133,170 @@
     @apply font-sans;
   }
 }
+
+/* Futuristic effects */
+:root {
+  --neon-cyan: #00f0ff;
+  --neon-magenta: #ff00ff;
+  --neon-pink: #ff6b9d;
+}
+
+/* Glow effect */
+.glow-cyan {
+  filter: drop-shadow(0 0 8px var(--neon-cyan)) drop-shadow(0 0 20px var(--neon-cyan));
+}
+
+.glow-pink {
+  filter: drop-shadow(0 0 6px var(--neon-pink)) drop-shadow(0 0 15px var(--neon-pink));
+}
+
+.glow-text {
+  text-shadow: 0 0 10px var(--neon-cyan), 0 0 20px var(--neon-cyan), 0 0 40px var(--neon-cyan);
+}
+
+/* Scan line effect */
+.scanlines::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 240, 255, 0.03) 2px,
+    rgba(0, 240, 255, 0.03) 4px
+  );
+  pointer-events: none;
+  z-index: 100;
+}
+
+/* Glitch animation */
+@keyframes glitch {
+  0%, 90%, 100% {
+    transform: translate(0);
+    opacity: 1;
+  }
+  92% {
+    transform: translate(-2px, 1px);
+    opacity: 0.8;
+  }
+  94% {
+    transform: translate(2px, -1px);
+    opacity: 0.9;
+  }
+  96% {
+    transform: translate(-1px, 2px);
+    opacity: 0.8;
+  }
+  98% {
+    transform: translate(1px, -2px);
+    opacity: 1;
+  }
+}
+
+.glitch {
+  animation: glitch 4s infinite;
+}
+
+/* Pulse glow animation */
+@keyframes pulse-glow {
+  0%, 100% {
+    filter: drop-shadow(0 0 5px var(--neon-cyan)) drop-shadow(0 0 10px var(--neon-cyan));
+    border-color: var(--neon-cyan);
+  }
+  50% {
+    filter: drop-shadow(0 0 15px var(--neon-cyan)) drop-shadow(0 0 30px var(--neon-cyan));
+    border-color: var(--neon-pink);
+  }
+}
+
+.pulse-glow {
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+
+/* Flicker animation */
+@keyframes flicker {
+  0%, 100% { opacity: 1; }
+  41% { opacity: 1; }
+  42% { opacity: 0.8; }
+  43% { opacity: 1; }
+  45% { opacity: 0.3; }
+  46% { opacity: 1; }
+}
+
+.flicker {
+  animation: flicker 5s infinite;
+}
+
+/* Corner brackets */
+.corner-brackets {
+  position: relative;
+}
+
+.corner-brackets::before,
+.corner-brackets::after {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-color: var(--neon-cyan);
+  opacity: 0.6;
+}
+
+.corner-brackets::before {
+  top: -8px;
+  left: -8px;
+  border-top: 1px solid;
+  border-left: 1px solid;
+}
+
+.corner-brackets::after {
+  bottom: -8px;
+  right: -8px;
+  border-bottom: 1px solid;
+  border-right: 1px solid;
+}
+
+/* Animated border */
+@keyframes border-flow {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+.animated-border {
+  position: relative;
+  background: linear-gradient(90deg, var(--neon-cyan), var(--neon-pink), var(--neon-cyan));
+  background-size: 200% 100%;
+  animation: border-flow 3s linear infinite;
+  padding: 1px;
+}
+
+.animated-border > * {
+  background: black;
+}
+
+/* Float animation */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+.float {
+  animation: float 4s ease-in-out infinite;
+}
+
+/* Grid background */
+.grid-bg {
+  background-image:
+    linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
+  background-size: 50px 50px;
+}
