@@ -1,17 +1,35 @@
 export function LoadingDots() {
+  // Many small dots forming a circle
+  const dotCount = 24
+  const dots = Array.from({ length: dotCount }, (_, i) => ({
+    angle: (i / dotCount) * 360,
+    delay: i * 0.05,
+  }))
+
   return (
-    <div className="flex flex-col items-center justify-center gap-3">
-      <div className="relative w-8 h-8 flex items-center justify-center">
-        <span className="text-2xl text-white/80 animate-pulse-scale">✳</span>
+    <div className="flex flex-col items-center justify-center gap-4">
+      <div className="relative w-10 h-10">
+        {dots.map((dot, i) => (
+          <span
+            key={i}
+            className="absolute w-1 h-1 bg-white rounded-full animate-dot-fade"
+            style={{
+              left: '50%',
+              top: '50%',
+              transform: `rotate(${dot.angle}deg) translateX(18px) translateY(-50%)`,
+              animationDelay: `${dot.delay}s`,
+            }}
+          />
+        ))}
       </div>
-      <p className="text-[11px] text-muted-foreground/40">Loading...</p>
+      <p className="text-[11px] text-muted-foreground/40">Processing...</p>
       <style>{`
-        @keyframes pulse-scale {
-          0%, 100% { transform: scale(0.8); opacity: 0.5; }
-          50% { transform: scale(1.2); opacity: 1; }
+        @keyframes dot-fade {
+          0%, 100% { opacity: 0.15; }
+          50% { opacity: 1; }
         }
-        .animate-pulse-scale {
-          animation: pulse-scale 1.2s ease-in-out infinite;
+        .animate-dot-fade {
+          animation: dot-fade 1.2s ease-in-out infinite;
         }
       `}</style>
     </div>

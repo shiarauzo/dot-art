@@ -78,9 +78,9 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
         return
       }
 
-      ctx.fillStyle = '#000'
+      ctx.fillStyle = '#000000'
       ctx.fillRect(0, 0, screenWidth, screenHeight)
-      ctx.fillStyle = '#fff'
+      ctx.fillStyle = '#ffffff'
 
       for (const dot of dots) {
         const dotElapsed = elapsed - dot.delay
