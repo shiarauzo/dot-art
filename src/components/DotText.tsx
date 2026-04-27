@@ -42,9 +42,8 @@ export function DotText({ text, className = '' }: DotTextProps) {
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
     const data = imageData.data
 
-    // Clear and redraw as dots with 3D effect
-    ctx.fillStyle = '#000'
-    ctx.fillRect(0, 0, canvas.width, canvas.height)
+    // Clear canvas (transparent background)
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
 
     const dotSpacing = 2.5
 
