@@ -1,16 +1,16 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { Slider } from '@/components/ui/slider'
-import { Download, Code, RotateCcw, Palette } from 'lucide-react'
+import { Download, RotateCcw, Palette } from 'lucide-react'
+import { removeBackground } from '@imgly/background-removal'
 // import { useAuth } from '@/context/AuthContext'
 // import { AuthModal } from '@/components/AuthModal'
 // import { getCheckoutUrl } from '@/lib/polar'
 import { HeroArt } from '@/components/HeroArt'
 import { SplashScreen } from '@/components/SplashScreen'
 import { DotText } from '@/components/DotText'
+import { LoadingDots } from '@/components/LoadingDots'
 
 type DotShape = 'circle' | 'square' | 'diamond' | 'star' | 'heart'
-type Preset = 'none' | 'retro' | 'newspaper' | 'sketch'
-
 interface DotArtSettings {
   density: number
   maxDotSize: number
@@ -22,28 +22,19 @@ interface DotArtSettings {
   bgColor: string
   irregularSpacing: boolean
   exportScale: number
-  preset: Preset
 }
 
 const DEFAULT_SETTINGS: DotArtSettings = {
-  density: 50,
-  maxDotSize: 8,
-  contrast: 100,
+  density: 35,
+  maxDotSize: 2,
+  contrast: 110,
   brightness: 100,
   inverted: false,
-  dotShape: 'circle',
+  dotShape: 'diamond',
   dotColor: '#ffffff',
   bgColor: '#000000',
-  irregularSpacing: false,
+  irregularSpacing: true,
   exportScale: 1,
-  preset: 'none',
-}
-
-const PRESETS: Record<Preset, Partial<DotArtSettings>> = {
-  none: {},
-  retro: { dotColor: '#00ff00', bgColor: '#001100', density: 40, maxDotSize: 6 },
-  newspaper: { dotColor: '#000000', bgColor: '#f5f5dc', inverted: true, density: 60, maxDotSize: 4 },
-  sketch: { irregularSpacing: true, density: 30, maxDotSize: 3, contrast: 120 },
 }
 
 function App() {
@@ -51,21 +42,40 @@ function App() {
   const [settings, setSettings] = useState<DotArtSettings>(DEFAULT_SETTINGS)
   const [svgContent, setSvgContent] = useState<string>('')
   const [svgExport, setSvgExport] = useState<string>('')
-  const [copied, setCopied] = useState<string | null>(null)
   // const [authModalOpen, setAuthModalOpen] = useState(false)
   const [splashComplete, setSplashComplete] = useState(false)
+  const [isProcessing, setIsProcessing] = useState(false)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // const { user, signOut } = useAuth()
   const isPro = true // Free launch - all features unlocked
 
-  const handleImageUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    const img = new Image()
-    img.onload = () => setImage(img)
-    img.src = URL.createObjectURL(file)
+
+    setIsProcessing(true)
+
+    try {
+      const blob = await removeBackground(file)
+      const url = URL.createObjectURL(blob)
+      const img = new Image()
+      img.onload = () => {
+        setImage(img)
+        setIsProcessing(false)
+      }
+      img.src = url
+    } catch (error) {
+      console.error('Background removal failed:', error)
+      // Fallback: use original image
+      const img = new Image()
+      img.onload = () => {
+        setImage(img)
+        setIsProcessing(false)
+      }
+      img.src = URL.createObjectURL(file)
+    }
   }, [])
 
   // const handleDrop = useCallback((e: React.DragEvent) => {
@@ -77,10 +87,6 @@ function App() {
   //   img.src = URL.createObjectURL(file)
   // }, [])
 
-  const applyPreset = (preset: Preset) => {
-    if (!isPro && preset !== 'none') return
-    setSettings(s => ({ ...DEFAULT_SETTINGS, ...PRESETS[preset], preset, density: s.density }))
-  }
 
   const generateDotArt = useCallback(() => {
     if (!image || !canvasRef.current) return
@@ -109,8 +115,43 @@ function App() {
     const contrastFactor = isPro ? settings.contrast / 100 : 1
     const brightnessFactor = isPro ? settings.brightness / 100 : 1
 
-    const dots: { x: number; y: number; r: number }[] = []
+    // Helper: get alpha at position with bounds checking
+    const getAlpha = (px: number, py: number): number => {
+      if (px < 0 || px >= width || py < 0 || py >= height) return 0
+      const idx = (Math.floor(py) * width + Math.floor(px)) * 4
+      return data[idx + 3]
+    }
+
+    // Helper: calculate edge factor by sampling neighbors (0 = edge, 1 = solid interior)
+    const getEdgeFactor = (px: number, py: number, sampleRadius: number): number => {
+      const samples = 8
+      let totalAlpha = 0
+      let validSamples = 0
+
+      for (let i = 0; i < samples; i++) {
+        const angle = (i / samples) * Math.PI * 2
+        const sx = px + Math.cos(angle) * sampleRadius
+        const sy = py + Math.sin(angle) * sampleRadius
+        totalAlpha += getAlpha(sx, sy)
+        validSamples++
+      }
+
+      // Also sample at half radius for better gradient
+      for (let i = 0; i < samples; i++) {
+        const angle = (i / samples) * Math.PI * 2 + Math.PI / samples
+        const sx = px + Math.cos(angle) * (sampleRadius * 0.5)
+        const sy = py + Math.sin(angle) * (sampleRadius * 0.5)
+        totalAlpha += getAlpha(sx, sy)
+        validSamples++
+      }
+
+      const avgAlpha = totalAlpha / validSamples
+      return avgAlpha / 255
+    }
+
+    const dots: { x: number; y: number; r: number; edgeFactor: number }[] = []
     const baseStep = Math.max(2, Math.floor(100 / settings.density))
+    const sampleRadius = baseStep * 2 // How far to look for edge detection
 
     for (let y = 0; y < height; y += baseStep) {
       for (let x = 0; x < width; x += baseStep) {
@@ -122,7 +163,16 @@ function App() {
         }
 
         const i = (Math.floor(y) * width + Math.floor(x)) * 4
-        const r = data[i], g = data[i + 1], b = data[i + 2]
+        const r = data[i], g = data[i + 1], b = data[i + 2], a = data[i + 3]
+
+        // Skip transparent pixels
+        if (a < 100) continue
+
+        // Calculate edge factor for smooth transitions
+        const edgeFactor = getEdgeFactor(x, y, sampleRadius)
+
+        // Skip if too close to edge (creates smooth fade)
+        if (edgeFactor < 0.3) continue
 
         let brightness = (r + g + b) / 3
         brightness = ((brightness / 255 - 0.5) * contrastFactor + 0.5) * 255 * brightnessFactor
@@ -131,15 +181,39 @@ function App() {
         let normalizedBrightness = brightness / 255
         if (isPro && settings.inverted) normalizedBrightness = 1 - normalizedBrightness
 
-        const dotRadius = normalizedBrightness * settings.maxDotSize
-        if (dotRadius > 0.5) dots.push({ x: finalX, y: finalY, r: dotRadius })
+        // Apply edge factor to dot radius - dots get smaller near edges
+        const edgeScale = Math.pow(edgeFactor, 0.5) // Smooth curve
+        const dotRadius = normalizedBrightness * settings.maxDotSize * edgeScale
+
+        if (dotRadius > 0.2) {
+          dots.push({ x: finalX, y: finalY, r: dotRadius, edgeFactor })
+        }
       }
     }
 
-    const dotColor = isPro ? settings.dotColor : '#fff'
+    const baseDotColor = isPro ? settings.dotColor : '#fff'
     const bgColor = isPro ? settings.bgColor : '#000'
 
-    const getShapePath = (x: number, y: number, r: number): string => {
+    // Parse base color to RGB for gradient calculations
+    const parseColor = (hex: string): { r: number; g: number; b: number } => {
+      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
+      return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+      } : { r: 255, g: 255, b: 255 }
+    }
+
+    const baseRGB = parseColor(baseDotColor)
+
+    const getShapePath = (x: number, y: number, r: number, edgeFactor: number): string => {
+      // Calculate color based on edge factor - grayer near edges
+      const colorIntensity = 0.4 + edgeFactor * 0.6 // Range: 0.4 to 1.0
+      const finalR = Math.round(baseRGB.r * colorIntensity)
+      const finalG = Math.round(baseRGB.g * colorIntensity)
+      const finalB = Math.round(baseRGB.b * colorIntensity)
+      const dotColor = `rgb(${finalR},${finalG},${finalB})`
+
       const shape = isPro ? settings.dotShape : 'circle'
       switch (shape) {
         case 'square':
@@ -165,19 +239,20 @@ function App() {
       }
     }
 
-    const inner = `<rect width="100%" height="100%" fill="${bgColor}"/>
-  ${dots.map(d => getShapePath(d.x, d.y, d.r)).join('\n  ')}`
+    const dotsContent = dots.map(d => getShapePath(d.x, d.y, d.r, d.edgeFactor)).join('\n  ')
+    const innerWithBg = `<rect width="100%" height="100%" fill="${bgColor}"/>
+  ${dotsContent}`
 
-    // Display: responsive — width fills container, height auto from viewBox aspect ratio
+    // Display: transparent background for preview
     setSvgContent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" style="width:100%;height:auto;display:block">
-  ${inner}
+  ${dotsContent}
 </svg>`)
 
-    // Export: original image dimensions × exportScale
+    // Export: original image dimensions × exportScale (with background)
     const exportW = Math.floor(naturalWidth * (isPro ? settings.exportScale : 1))
     const exportH = Math.floor(naturalHeight * (isPro ? settings.exportScale : 1))
     setSvgExport(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${exportW}" height="${exportH}">
-  ${inner}
+  ${innerWithBg}
 </svg>`)
   }, [image, settings, isPro])
 
@@ -212,18 +287,6 @@ function App() {
       }, 'image/png')
     }
     img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgExport)))
-  }
-
-  const copyReactCode = () => {
-    if (!svgExport || !isPro) return
-    navigator.clipboard.writeText(`export function DotArt() {\n  return (\n    ${svgExport.split('\n').join('\n    ')}\n  )\n}`)
-    setCopied('react'); setTimeout(() => setCopied(null), 2000)
-  }
-
-  const copyHTMLCode = () => {
-    if (!svgExport || !isPro) return
-    navigator.clipboard.writeText(svgExport)
-    setCopied('html'); setTimeout(() => setCopied(null), 2000)
   }
 
   const resetImage = () => {
@@ -263,7 +326,7 @@ function App() {
         </div>
       </nav>
 
-      {!image ? (
+      {!image && !isProcessing ? (
         /* ─── Upload State ─── */
         <div className="h-[calc(100vh-44px)] flex flex-col overflow-hidden">
           <header className="flex-1 flex flex-col">
@@ -276,7 +339,8 @@ function App() {
               </p>
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="px-8 py-3 text-sm font-medium bg-foreground text-background rounded-none cursor-pointer hover:bg-foreground/90 hover:scale-105 active:scale-95 transition-all duration-150 mb-3"
+                disabled={isProcessing}
+                className="px-8 py-3 text-sm font-medium bg-foreground text-background rounded-none cursor-pointer hover:bg-foreground/90 hover:scale-105 active:scale-95 transition-all duration-150 mb-3 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100"
               >
                 Try it
               </button>
@@ -285,8 +349,6 @@ function App() {
                 <span className="flex items-center gap-1.5"><Download className="w-3.5 h-3.5" /> SVG & PNG</span>
                 <span>·</span>
                 <span className="flex items-center gap-1.5"><Palette className="w-3.5 h-3.5" /> Customizable</span>
-                <span>·</span>
-                <span className="flex items-center gap-1.5"><Code className="w-3.5 h-3.5" /> Code export</span>
               </div>
             </div>
             <div className="flex-1 w-full overflow-hidden -mt-8 md:-mt-20 lg:-mt-32 relative z-0">
@@ -300,9 +362,16 @@ function App() {
           <div className="grid lg:grid-cols-[1fr_272px] border border-border/40 rounded-xl overflow-hidden min-h-[600px]">
 
             {/* Preview */}
-            <div className="flex items-center justify-center p-10 min-h-[500px]">
-              {svgContent ? (
-                <div className="w-full" dangerouslySetInnerHTML={{ __html: svgContent }} />
+            <div className="flex items-start justify-center p-4 pt-2">
+              {isProcessing ? (
+                <div className="flex items-center justify-center min-h-[400px] w-full">
+                  <LoadingDots />
+                </div>
+              ) : svgContent ? (
+                <div
+                  className="flex items-start justify-center w-full [&>svg]:max-w-full [&>svg]:max-h-[85vh] [&>svg]:w-auto [&>svg]:h-auto [&>svg]:min-w-[60%]"
+                  dangerouslySetInnerHTML={{ __html: svgContent }}
+                />
               ) : (
                 <span className="text-xs text-muted-foreground/30">Generating…</span>
               )}
@@ -315,11 +384,12 @@ function App() {
               {/* Image meta + reset */}
               <div className="px-4 py-2.5 border-b border-border/40 flex items-center justify-between">
                 <span className="text-[11px] tabular-nums text-muted-foreground/40">
-                  {image.naturalWidth}×{image.naturalHeight}
+                  {image ? `${image.naturalWidth}×${image.naturalHeight}` : 'Loading...'}
                 </span>
                 <button
                   onClick={resetImage}
-                  className="flex items-center gap-1 text-[11px] text-muted-foreground/40 hover:text-muted-foreground transition-colors"
+                  disabled={isProcessing}
+                  className="flex items-center gap-1 text-[11px] text-muted-foreground/40 hover:text-muted-foreground transition-colors disabled:opacity-30"
                 >
                   <RotateCcw className="w-3 h-3" /> New image
                 </button>
@@ -359,27 +429,6 @@ function App() {
                   <div className="border-t border-border/40 pt-1">
                     <div className="flex items-center gap-1.5 mb-3">
                       <span className="text-[10px] uppercase tracking-widest font-medium text-muted-foreground/30">Advanced</span>
-                    </div>
-
-                    {/* Presets */}
-                    <div className="space-y-1.5 mb-4">
-                      <label className="text-xs text-muted-foreground/60">Presets</label>
-                      <div className="grid grid-cols-2 gap-1">
-                        {(['none', 'retro', 'newspaper', 'sketch'] as Preset[]).map(p => (
-                          <button
-                            key={p}
-                            disabled={!isPro && p !== 'none'}
-                            onClick={() => applyPreset(p)}
-                            className={`py-1.5 rounded text-xs capitalize transition-colors disabled:opacity-25 disabled:cursor-not-allowed ${
-                              settings.preset === p
-                                ? 'bg-foreground text-background'
-                                : 'bg-foreground/5 text-muted-foreground hover:bg-foreground/10'
-                            }`}
-                          >
-                            {p}
-                          </button>
-                        ))}
-                      </div>
                     </div>
 
                     {/* Contrast */}
@@ -458,27 +507,6 @@ function App() {
                       </div>
                     </div>
 
-                    {/* Toggles */}
-                    <div className="flex gap-1.5 mb-4">
-                      {[
-                        { key: 'inverted' as const, label: 'Invert' },
-                        { key: 'irregularSpacing' as const, label: 'Organic' },
-                      ].map(({ key, label }) => (
-                        <button
-                          key={key}
-                          disabled={!isPro}
-                          onClick={() => setSettings(s => ({ ...s, [key]: !s[key] }))}
-                          className={`flex-1 py-1.5 rounded text-xs transition-colors disabled:opacity-25 disabled:cursor-not-allowed ${
-                            settings[key]
-                              ? 'bg-foreground text-background'
-                              : 'bg-foreground/5 text-muted-foreground hover:bg-foreground/10'
-                          }`}
-                        >
-                          {label}
-                        </button>
-                      ))}
-                    </div>
-
                     {/* Export Scale */}
                     <div className="space-y-1.5">
                       <label className={`text-xs ${!isPro ? 'text-muted-foreground/30' : 'text-muted-foreground/60'}`}>Export scale</label>
@@ -536,22 +564,6 @@ function App() {
                       <Download className="w-3 h-3" /> PNG
                     </button>
                   </div>
-                  {isPro && (
-                    <div className="grid grid-cols-2 gap-1.5">
-                      <button
-                        onClick={copyReactCode}
-                        className="py-1.5 text-[11px] text-muted-foreground/40 hover:text-muted-foreground bg-foreground/[0.03] rounded transition-colors"
-                      >
-                        {copied === 'react' ? 'Copied!' : 'React'}
-                      </button>
-                      <button
-                        onClick={copyHTMLCode}
-                        className="py-1.5 text-[11px] text-muted-foreground/40 hover:text-muted-foreground bg-foreground/[0.03] rounded transition-colors"
-                      >
-                        {copied === 'html' ? 'Copied!' : 'HTML'}
-                      </button>
-                    </div>
-                  )}
                 </div>
               )}
             </div>
