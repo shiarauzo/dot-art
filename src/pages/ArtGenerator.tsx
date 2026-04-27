@@ -1,9 +1,9 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Slider } from '@/components/ui/slider'
-import { Download, X, Upload } from 'lucide-react'
+import { Download, X, Upload, Palette, SlidersHorizontal, Image } from 'lucide-react'
 import { removeBackground } from '@imgly/background-removal'
-import { LoadingDots } from '@/components/LoadingDots'
+import { DotText } from '@/components/DotText'
 
 type DotShape = 'circle' | 'square' | 'diamond' | 'star' | 'heart'
 interface DotArtSettings {
@@ -42,6 +42,7 @@ export function ArtGenerator() {
   const [svgContent, setSvgContent] = useState<string>('')
   const [svgExport, setSvgExport] = useState<string>('')
   const [isProcessing, setIsProcessing] = useState(false)
+  const [processingStep, setProcessingStep] = useState('')
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const hasCheckedPendingImage = useRef(false)
@@ -51,17 +52,21 @@ export function ArtGenerator() {
   // Process image with optional background removal
   const processImage = useCallback(async (dataUrl: string, shouldRemoveBackground: boolean) => {
     setIsProcessing(true)
+    setProcessingStep(shouldRemoveBackground ? 'Removing background...' : 'Processing image...')
 
     if (shouldRemoveBackground) {
       try {
+        setProcessingStep('AI analyzing image...')
         const response = await fetch(dataUrl)
         const blob = await response.blob()
+        setProcessingStep('Isolating subject...')
         const processedBlob = await removeBackground(blob)
         const url = URL.createObjectURL(processedBlob)
         const img = new Image()
         img.onload = () => {
           setImage(img)
           setIsProcessing(false)
+          setProcessingStep('')
         }
         img.src = url
       } catch (error) {
@@ -70,15 +75,16 @@ export function ArtGenerator() {
         img.onload = () => {
           setImage(img)
           setIsProcessing(false)
+          setProcessingStep('')
         }
         img.src = dataUrl
       }
     } else {
-      // No background removal - use original image
       const img = new Image()
       img.onload = () => {
         setImage(img)
         setIsProcessing(false)
+        setProcessingStep('')
       }
       img.src = dataUrl
     }
@@ -96,13 +102,11 @@ export function ArtGenerator() {
       sessionStorage.removeItem('pendingFileName')
       setOriginalDataUrl(pendingImage)
       if (pendingFileName) {
-        // Remove extension from filename
         const nameWithoutExt = pendingFileName.replace(/\.[^/.]+$/, '')
         setOriginalFileName(nameWithoutExt)
       }
       processImage(pendingImage, settings.removeBackground)
     }
-    // Don't redirect - show empty state instead
   }, [processImage, settings.removeBackground])
 
   // Reprocess when removeBackground toggle changes
@@ -172,7 +176,7 @@ export function ArtGenerator() {
 
     const dots: { x: number; y: number; r: number; edgeFactor: number; alphaFactor: number }[] = []
     const baseStep = Math.max(2, Math.floor(100 / settings.density))
-    const sampleRadius = baseStep * 1.5 // Reduced for less aggressive edge detection
+    const sampleRadius = baseStep * 1.5
 
     for (let y = 0; y < height; y += baseStep) {
       for (let x = 0; x < width; x += baseStep) {
@@ -186,10 +190,8 @@ export function ArtGenerator() {
         const i = (Math.floor(y) * width + Math.floor(x)) * 4
         const r = data[i], g = data[i + 1], b = data[i + 2], a = data[i + 3]
 
-        // Skip very transparent pixels
         if (a < 30) continue
 
-        // Calculate edge factor but don't skip - just use for smooth transitions
         const edgeFactor = Math.max(0.3, getEdgeFactor(x, y, sampleRadius))
 
         let brightness = (r + g + b) / 3
@@ -199,7 +201,6 @@ export function ArtGenerator() {
         let normalizedBrightness = brightness / 255
         if (isPro && settings.inverted) normalizedBrightness = 1 - normalizedBrightness
 
-        // Use alpha to fade out background remnants
         const alphaFactor = a / 255
         const edgeScale = Math.pow(edgeFactor, 0.5)
         const dotRadius = normalizedBrightness * settings.maxDotSize * edgeScale
@@ -225,8 +226,7 @@ export function ArtGenerator() {
     const baseRGB = parseColor(baseDotColor)
 
     const getShapePath = (x: number, y: number, r: number, edgeFactor: number, alphaFactor: number): string => {
-      // Low alpha = very faint (background remnants), high alpha = full color
-      const alphaIntensity = Math.pow(alphaFactor, 2) // Quadratic curve makes low alpha very faint
+      const alphaIntensity = Math.pow(alphaFactor, 2)
       const colorIntensity = 0.1 + alphaIntensity * 0.9 * (0.4 + edgeFactor * 0.6)
       const finalR = Math.round(baseRGB.r * colorIntensity)
       const finalG = Math.round(baseRGB.g * colorIntensity)
@@ -258,14 +258,13 @@ export function ArtGenerator() {
       }
     }
 
-    // Calculate bounding box of dots to crop transparent areas
     if (dots.length === 0) {
       setSvgContent('')
       setSvgExport('')
       return
     }
 
-    const padding = settings.maxDotSize // Add small padding around content
+    const padding = settings.maxDotSize
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
     for (const d of dots) {
       minX = Math.min(minX, d.x - d.r)
@@ -274,7 +273,6 @@ export function ArtGenerator() {
       maxY = Math.max(maxY, d.y + d.r)
     }
 
-    // Apply padding and clamp to image bounds
     minX = Math.max(0, minX - padding)
     minY = Math.max(0, minY - padding)
     maxX = Math.min(width, maxX + padding)
@@ -285,12 +283,10 @@ export function ArtGenerator() {
 
     const dotsContent = dots.map(d => getShapePath(d.x, d.y, d.r, d.edgeFactor, d.alphaFactor)).join('\n  ')
 
-    // Preview: cropped viewBox (no background, transparent)
     setSvgContent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="${minX} ${minY} ${croppedWidth} ${croppedHeight}" style="width:100%;height:auto;display:block">
   ${dotsContent}
 </svg>`)
 
-    // Export: cropped with background
     const scaleRatio = naturalWidth / width
     const exportW = Math.floor(croppedWidth * scaleRatio * (isPro ? settings.exportScale : 1))
     const exportH = Math.floor(croppedHeight * scaleRatio * (isPro ? settings.exportScale : 1))
@@ -302,13 +298,12 @@ export function ArtGenerator() {
 </svg>`)
   }, [image, settings, isPro])
 
-  // Debounced generation for smooth slider interaction
   useEffect(() => {
     if (!image) return
 
     const timeout = setTimeout(() => {
       generateDotArt()
-    }, 50) // Small delay for smooth feel
+    }, 50)
 
     return () => clearTimeout(timeout)
   }, [image, settings, generateDotArt])
@@ -375,12 +370,16 @@ export function ArtGenerator() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <nav className="border-b border-border/50">
-        <div className="container mx-auto px-4 h-11 flex items-center justify-between">
-          <Link to="/" className="text-sm font-semibold tracking-tight hover:opacity-80 transition-opacity">
-            dotart
+    <div className="min-h-screen bg-black">
+      {/* Navigation */}
+      <nav className="border-b border-neutral-800">
+        <div className="container mx-auto px-4 h-14 flex items-center justify-between">
+          <Link to="/" className="hover:opacity-80 transition-opacity">
+            <DotText text="dotart" size={0.8} dotDensity={2} color="#a0d8e8" shadowColor="#2a4a52" />
           </Link>
+          <span className="text-[10px] font-mono text-neutral-600 uppercase tracking-widest">
+            generator
+          </span>
         </div>
       </nav>
 
@@ -392,215 +391,287 @@ export function ArtGenerator() {
           onChange={handleFileSelect}
           className="hidden"
         />
-        <div className="grid lg:grid-cols-[1fr_272px] border border-border/40 overflow-hidden min-h-[600px]">
-            <div className="overflow-hidden p-8 relative">
-              {isProcessing ? (
-                <div className="flex items-center justify-center min-h-[400px] w-full">
-                  <LoadingDots />
-                </div>
-              ) : svgContent ? (
-                <>
-                  <button
-                    onClick={clearImage}
-                    className="absolute top-4 left-4 w-8 h-8 flex items-center justify-center bg-background/80 hover:bg-background border border-border/40 transition-colors z-10"
-                  >
-                    <X className="w-4 h-4 text-muted-foreground" />
-                  </button>
-                  <div
-                    className="flex items-start justify-center [&>svg]:max-w-full [&>svg]:max-h-[80vh] [&>svg]:w-auto [&>svg]:h-auto"
-                    dangerouslySetInnerHTML={{ __html: svgContent }}
-                  />
-                </>
-              ) : (
-                <div
-                  onClick={() => fileInputRef.current?.click()}
-                  className="flex flex-col items-center justify-center min-h-[400px] w-full cursor-pointer border border-dashed border-border/40 hover:border-border/80 transition-colors"
-                >
-                  <Upload className="w-8 h-8 text-muted-foreground/30 mb-3" />
-                  <span className="text-sm text-muted-foreground/50">Upload an image</span>
-                  <span className="text-xs text-muted-foreground/30 mt-1">Click to select</span>
-                </div>
-              )}
-              <canvas ref={canvasRef} className="hidden" />
-            </div>
 
-            <div className="border-l border-border/40 flex flex-col">
-              <div className="px-4 py-2.5 border-b border-border/40">
-                <span className="text-[11px] tabular-nums text-muted-foreground/40">
-                  {image ? `${image.naturalWidth}×${image.naturalHeight}` : '—'}
+        <div className="grid lg:grid-cols-[1fr_300px] border border-neutral-800 overflow-hidden min-h-[600px]">
+          {/* Preview Area */}
+          <div className="bg-neutral-950 p-8 relative">
+            {isProcessing ? (
+              <div className="flex flex-col items-center justify-center min-h-[400px] w-full gap-4">
+                {/* Animated loading indicator */}
+                <div className="relative">
+                  <div className="w-16 h-16 border border-neutral-700 animate-pulse" />
+                  <div className="absolute inset-2 border border-[#a0d8e8]/50 animate-ping" />
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-mono text-neutral-400">{processingStep}</p>
+                  <p className="text-[10px] font-mono text-neutral-600 mt-1">This may take a moment</p>
+                </div>
+              </div>
+            ) : svgContent ? (
+              <>
+                <button
+                  onClick={clearImage}
+                  className="absolute top-4 left-4 w-8 h-8 flex items-center justify-center bg-black/80 hover:bg-neutral-800 border border-neutral-700 transition-colors z-10 group"
+                >
+                  <X className="w-4 h-4 text-neutral-500 group-hover:text-white transition-colors" />
+                </button>
+                <div
+                  className="flex items-start justify-center [&>svg]:max-w-full [&>svg]:max-h-[80vh] [&>svg]:w-auto [&>svg]:h-auto"
+                  dangerouslySetInnerHTML={{ __html: svgContent }}
+                />
+              </>
+            ) : (
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                className="relative flex flex-col items-center justify-center min-h-[400px] w-full cursor-pointer group"
+              >
+                {/* Decorative corners */}
+                <div className="absolute inset-8 border border-dashed border-neutral-800 group-hover:border-neutral-600 transition-colors">
+                  <div className="absolute -top-px -left-px w-4 h-4 border-t border-l border-[#a0d8e8]/40" />
+                  <div className="absolute -top-px -right-px w-4 h-4 border-t border-r border-[#a0d8e8]/40" />
+                  <div className="absolute -bottom-px -left-px w-4 h-4 border-b border-l border-[#a0d8e8]/40" />
+                  <div className="absolute -bottom-px -right-px w-4 h-4 border-b border-r border-[#a0d8e8]/40" />
+                </div>
+
+                <div className="relative z-10 flex flex-col items-center">
+                  <div className="w-16 h-16 border border-neutral-700 flex items-center justify-center mb-4 group-hover:border-[#a0d8e8]/50 transition-colors">
+                    <Upload className="w-6 h-6 text-neutral-600 group-hover:text-[#a0d8e8] transition-colors" />
+                  </div>
+                  <span className="text-sm font-mono text-neutral-500 group-hover:text-neutral-300 transition-colors">
+                    Drop image or click to upload
+                  </span>
+                  <span className="text-[10px] font-mono text-neutral-700 mt-2">
+                    PNG, JPG, WEBP supported
+                  </span>
+                </div>
+              </div>
+            )}
+            <canvas ref={canvasRef} className="hidden" />
+          </div>
+
+          {/* Controls Sidebar */}
+          <div className="border-l border-neutral-800 flex flex-col bg-neutral-950/50">
+            {/* Image info */}
+            <div className="px-4 py-3 border-b border-neutral-800 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Image className="w-3.5 h-3.5 text-neutral-600" />
+                <span className="text-[11px] font-mono text-neutral-500">
+                  {image ? `${image.naturalWidth} × ${image.naturalHeight}` : 'No image'}
                 </span>
               </div>
+            </div>
 
-              <div className="flex-1 overflow-y-auto">
-                <div className="p-4 space-y-5">
+            <div className="flex-1 overflow-y-auto">
+              {/* AI Section */}
+              <div className="p-4 border-b border-neutral-800">
+                <div className="mb-3">
+                  <span className="text-[11px] font-mono text-neutral-400 uppercase tracking-wider">AI Features</span>
+                </div>
 
-                  {/* Background removal - primary toggle */}
-                  <div className={`flex items-center justify-between ${!image ? 'opacity-50 pointer-events-none' : ''}`}>
-                    <div>
-                      <label className="text-xs text-muted-foreground block">Remove background</label>
-                      <span className="text-[10px] text-muted-foreground/40">AI-powered isolation</span>
-                    </div>
-                    <button
-                      onClick={() => setSettings(s => ({ ...s, removeBackground: !s.removeBackground }))}
-                      disabled={isProcessing || !image}
-                      className={`relative w-10 h-6 transition-colors disabled:opacity-50 ${
-                        settings.removeBackground ? 'bg-foreground' : 'bg-foreground/20'
+                <div className={`flex items-center justify-between ${!image ? 'opacity-40 pointer-events-none' : ''}`}>
+                  <div>
+                    <label className="text-xs text-neutral-300 block">Remove background</label>
+                    <span className="text-[10px] text-neutral-600">Isolate subject automatically</span>
+                  </div>
+                  <button
+                    onClick={() => setSettings(s => ({ ...s, removeBackground: !s.removeBackground }))}
+                    disabled={isProcessing || !image}
+                    className={`relative w-11 h-6 transition-all disabled:opacity-50 border ${
+                      settings.removeBackground
+                        ? 'bg-[#a0d8e8]/20 border-[#a0d8e8]/50'
+                        : 'bg-neutral-900 border-neutral-700'
+                    }`}
+                  >
+                    <span
+                      className={`absolute top-1 left-1 w-4 h-4 transition-all ${
+                        settings.removeBackground
+                          ? 'translate-x-5 bg-[#a0d8e8]'
+                          : 'translate-x-0 bg-neutral-600'
                       }`}
-                    >
-                      <span
-                        className={`absolute top-1 left-1 w-4 h-4 bg-background transition-transform ${
-                          settings.removeBackground ? 'translate-x-4' : 'translate-x-0'
-                        }`}
-                      />
-                    </button>
-                  </div>
-
-                  {/* Shape selector - visual first */}
-                  <div className={`space-y-2 ${isProcessing || !image ? 'opacity-50 pointer-events-none' : ''}`}>
-                    <label className="text-xs text-muted-foreground">Shape</label>
-                    <div className="flex gap-1.5">
-                      {(['circle', 'square', 'diamond', 'star', 'heart'] as DotShape[]).map(shape => (
-                        <button
-                          key={shape}
-                          onClick={() => setSettings(s => ({ ...s, dotShape: shape }))}
-                          disabled={isProcessing || !image}
-                          title={shape}
-                          className={`flex-1 py-2 text-base transition-all ${
-                            settings.dotShape === shape
-                              ? 'bg-foreground text-background scale-105'
-                              : 'bg-foreground/5 text-muted-foreground/60 hover:bg-foreground/10 hover:text-muted-foreground'
-                          }`}
-                        >
-                          {shape === 'circle' ? '●' : shape === 'square' ? '■' : shape === 'diamond' ? '◆' : shape === 'star' ? '★' : '♥'}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Density & Size - core controls */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <label className="text-xs text-muted-foreground">Density</label>
-                        <span className="text-[10px] tabular-nums text-muted-foreground/40">{settings.density}</span>
-                      </div>
-                      <Slider
-                        value={[settings.density]}
-                        onValueChange={(v) => setSettings(s => ({ ...s, density: Array.isArray(v) ? v[0] : v }))}
-                        min={10} max={100} step={1}
-                        disabled={isProcessing}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <label className="text-xs text-muted-foreground">Size</label>
-                        <span className="text-[10px] tabular-nums text-muted-foreground/40">{settings.maxDotSize}px</span>
-                      </div>
-                      <Slider
-                        value={[settings.maxDotSize]}
-                        onValueChange={(v) => setSettings(s => ({ ...s, maxDotSize: Array.isArray(v) ? v[0] : v }))}
-                        min={2} max={20} step={1}
-                        disabled={isProcessing}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Dot color */}
-                  <div className={`flex items-center gap-2 ${isProcessing || !image ? 'opacity-50 pointer-events-none' : ''}`}>
-                    <input
-                      type="color" value={settings.dotColor}
-                      onChange={(e) => setSettings(s => ({ ...s, dotColor: e.target.value }))}
-                      disabled={isProcessing || !image}
-                      className="w-8 h-8 cursor-pointer bg-transparent border border-border/40 p-0.5 outline-none"
                     />
-                    <span className="text-xs text-muted-foreground/60">Color</span>
-                  </div>
-
-                  {/* Adjustments - collapsed feel */}
-                  <div className="border-t border-border/40 pt-4 space-y-3">
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <label className="text-[11px] text-muted-foreground/50">Contrast</label>
-                        <span className="text-[10px] tabular-nums text-muted-foreground/30">{settings.contrast}%</span>
-                      </div>
-                      <Slider
-                        value={[settings.contrast]}
-                        onValueChange={(v) => setSettings(s => ({ ...s, contrast: Array.isArray(v) ? v[0] : v }))}
-                        min={50} max={200} step={5}
-                        disabled={isProcessing}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <label className="text-[11px] text-muted-foreground/50">Brightness</label>
-                        <span className="text-[10px] tabular-nums text-muted-foreground/30">{settings.brightness}%</span>
-                      </div>
-                      <Slider
-                        value={[settings.brightness]}
-                        onValueChange={(v) => setSettings(s => ({ ...s, brightness: Array.isArray(v) ? v[0] : v }))}
-                        min={50} max={150} step={5}
-                        disabled={isProcessing}
-                      />
-                    </div>
-                  </div>
+                  </button>
                 </div>
               </div>
 
-              {svgContent && (
-                <div className="border-t border-border/40 p-4 space-y-3">
-                  {/* Export scale */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] text-muted-foreground/50">Scale</span>
-                    <div className="flex gap-1">
-                      {[1, 2, 3, 4].map(scale => (
-                        <button
-                          key={scale}
-                          onClick={() => setSettings(s => ({ ...s, exportScale: scale }))}
-                          className={`w-8 h-7 text-[11px] transition-colors ${
-                            settings.exportScale === scale
-                              ? 'bg-foreground text-background'
-                              : 'bg-foreground/5 text-muted-foreground/60 hover:bg-foreground/10'
-                          }`}
-                        >
-                          {scale}×
-                        </button>
-                      ))}
-                    </div>
+              {/* Shape Section */}
+              <div className={`p-4 border-b border-neutral-800 ${isProcessing || !image ? 'opacity-40 pointer-events-none' : ''}`}>
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-base">◆</span>
+                  <span className="text-[11px] font-mono text-neutral-400 uppercase tracking-wider">Shape</span>
+                </div>
+
+                <div className="grid grid-cols-5 gap-1.5">
+                  {(['circle', 'square', 'diamond', 'star', 'heart'] as DotShape[]).map(shape => (
+                    <button
+                      key={shape}
+                      onClick={() => setSettings(s => ({ ...s, dotShape: shape }))}
+                      disabled={isProcessing || !image}
+                      title={shape}
+                      className={`py-2.5 text-lg transition-all border ${
+                        settings.dotShape === shape
+                          ? 'bg-white text-black border-white'
+                          : 'bg-transparent text-neutral-500 border-neutral-800 hover:border-neutral-600 hover:text-neutral-300'
+                      }`}
+                    >
+                      {shape === 'circle' ? '●' : shape === 'square' ? '■' : shape === 'diamond' ? '◆' : shape === 'star' ? '★' : '♥'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Size & Density */}
+              <div className={`p-4 border-b border-neutral-800 space-y-4 ${isProcessing || !image ? 'opacity-40 pointer-events-none' : ''}`}>
+                <div className="flex items-center gap-2 mb-1">
+                  <SlidersHorizontal className="w-3.5 h-3.5 text-neutral-500" />
+                  <span className="text-[11px] font-mono text-neutral-400 uppercase tracking-wider">Controls</span>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <label className="text-xs text-neutral-400">Density</label>
+                    <span className="text-[10px] font-mono text-[#a0d8e8]">{settings.density}</span>
                   </div>
-                  {/* Export buttons */}
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      onClick={downloadSVG}
-                      className="py-2.5 text-xs font-medium text-muted-foreground bg-foreground/5 hover:bg-foreground/10 transition-colors flex items-center justify-center gap-1.5"
-                    >
-                      <Download className="w-3.5 h-3.5" /> SVG
-                    </button>
-                    <button
-                      onClick={downloadPNG}
-                      className="py-2.5 text-xs font-medium bg-foreground text-background hover:bg-foreground/90 transition-colors flex items-center justify-center gap-1.5"
-                    >
-                      <Download className="w-3.5 h-3.5" /> PNG
-                    </button>
+                  <Slider
+                    value={[settings.density]}
+                    onValueChange={(v) => setSettings(s => ({ ...s, density: Array.isArray(v) ? v[0] : v }))}
+                    min={10} max={100} step={1}
+                    disabled={isProcessing}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <label className="text-xs text-neutral-400">Dot size</label>
+                    <span className="text-[10px] font-mono text-[#a0d8e8]">{settings.maxDotSize}px</span>
+                  </div>
+                  <Slider
+                    value={[settings.maxDotSize]}
+                    onValueChange={(v) => setSettings(s => ({ ...s, maxDotSize: Array.isArray(v) ? v[0] : v }))}
+                    min={2} max={20} step={1}
+                    disabled={isProcessing}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <label className="text-xs text-neutral-400">Contrast</label>
+                    <span className="text-[10px] font-mono text-neutral-600">{settings.contrast}%</span>
+                  </div>
+                  <Slider
+                    value={[settings.contrast]}
+                    onValueChange={(v) => setSettings(s => ({ ...s, contrast: Array.isArray(v) ? v[0] : v }))}
+                    min={50} max={200} step={5}
+                    disabled={isProcessing}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <label className="text-xs text-neutral-400">Brightness</label>
+                    <span className="text-[10px] font-mono text-neutral-600">{settings.brightness}%</span>
+                  </div>
+                  <Slider
+                    value={[settings.brightness]}
+                    onValueChange={(v) => setSettings(s => ({ ...s, brightness: Array.isArray(v) ? v[0] : v }))}
+                    min={50} max={150} step={5}
+                    disabled={isProcessing}
+                  />
+                </div>
+              </div>
+
+              {/* Colors */}
+              <div className={`p-4 border-b border-neutral-800 ${isProcessing || !image ? 'opacity-40 pointer-events-none' : ''}`}>
+                <div className="flex items-center gap-2 mb-3">
+                  <Palette className="w-3.5 h-3.5 text-neutral-500" />
+                  <span className="text-[11px] font-mono text-neutral-400 uppercase tracking-wider">Colors</span>
+                </div>
+
+                <div className="flex gap-3">
+                  <div className="flex items-center gap-2">
+                    <div className="relative">
+                      <input
+                        type="color"
+                        value={settings.dotColor}
+                        onChange={(e) => setSettings(s => ({ ...s, dotColor: e.target.value }))}
+                        disabled={isProcessing || !image}
+                        className="w-10 h-10 cursor-pointer bg-transparent border-2 border-neutral-700 p-0 appearance-none [&::-webkit-color-swatch-wrapper]:p-1 [&::-webkit-color-swatch]:border-none"
+                      />
+                    </div>
+                    <span className="text-[10px] font-mono text-neutral-500">Dots</span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <div className="relative">
+                      <input
+                        type="color"
+                        value={settings.bgColor}
+                        onChange={(e) => setSettings(s => ({ ...s, bgColor: e.target.value }))}
+                        disabled={isProcessing || !image}
+                        className="w-10 h-10 cursor-pointer bg-transparent border-2 border-neutral-700 p-0 appearance-none [&::-webkit-color-swatch-wrapper]:p-1 [&::-webkit-color-swatch]:border-none"
+                      />
+                    </div>
+                    <span className="text-[10px] font-mono text-neutral-500">Background</span>
                   </div>
                 </div>
-              )}
+              </div>
             </div>
-          </div>
-      </main>
 
-      <footer className="fixed bottom-4 left-0 right-0 text-center pointer-events-none">
-        <span className="text-xs text-muted-foreground/40">
-          made by{' '}
-          <a
-            href="https://shiara.design"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-muted-foreground transition-colors pointer-events-auto"
-          >
-            shiara arauzo
-          </a>
-        </span>
-      </footer>
+            {/* Export Section */}
+            {svgContent && (
+              <div className="border-t border-neutral-800 p-4 space-y-4 bg-neutral-900/50">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-mono text-neutral-500 uppercase tracking-wider">Export scale</span>
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4].map(scale => (
+                      <button
+                        key={scale}
+                        onClick={() => setSettings(s => ({ ...s, exportScale: scale }))}
+                        className={`w-8 h-7 text-[11px] font-mono transition-all border ${
+                          settings.exportScale === scale
+                            ? 'bg-white text-black border-white'
+                            : 'bg-transparent text-neutral-500 border-neutral-700 hover:border-neutral-500'
+                        }`}
+                      >
+                        {scale}×
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={downloadSVG}
+                    className="py-3 text-xs font-mono font-medium text-neutral-400 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Download className="w-3.5 h-3.5" /> SVG
+                  </button>
+                  <button
+                    onClick={downloadPNG}
+                    className="py-3 text-xs font-mono font-medium bg-[#a0d8e8] text-black hover:bg-[#b8e4f0] transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Download className="w-3.5 h-3.5" /> PNG
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="mt-6 text-center">
+          <span className="text-[10px] font-mono text-neutral-700">
+            crafted by{' '}
+            <a
+              href="https://shiara.design"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-neutral-500 hover:text-[#a0d8e8] transition-colors"
+            >
+              shiara arauzo
+            </a>
+          </span>
+        </div>
+      </main>
     </div>
   )
 }
