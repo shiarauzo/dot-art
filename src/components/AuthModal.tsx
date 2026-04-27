@@ -85,7 +85,7 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
           </div>
 
           {error && (
-            <p className={`text-sm ${error.includes('Check your email') ? 'text-green-500' : 'text-destructive'}`}>
+            <p role="alert" className={`text-sm ${error.includes('Check your email') ? 'text-green-500' : 'text-destructive'}`}>
               {error}
             </p>
           )}
