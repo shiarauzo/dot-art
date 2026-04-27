@@ -25,32 +25,47 @@ export function HeroArt() {
 
     img.onload = () => {
       const viewportWidth = window.innerWidth
-      const aspectRatio = img.width / img.height
-      const width = viewportWidth
-      const height = Math.floor(width / aspectRatio)
+      const viewportHeight = window.innerHeight
+      const imgAspect = img.width / img.height
+      const viewportAspect = viewportWidth / viewportHeight
 
-      canvas.width = width
-      canvas.height = height
+      // Cover the viewport (like background-size: cover)
+      let width, height, offsetX = 0, offsetY = 0
+      if (imgAspect > viewportAspect) {
+        // Image is wider - fit to height
+        height = viewportHeight
+        width = height * imgAspect
+        offsetX = (width - viewportWidth) / 2
+      } else {
+        // Image is taller - fit to width
+        width = viewportWidth
+        height = width / imgAspect
+        offsetY = (height - viewportHeight) / 2
+      }
 
-      ctx.drawImage(img, 0, 0, width, height)
-      const imageData = ctx.getImageData(0, 0, width, height)
+      canvas.width = viewportWidth
+      canvas.height = viewportHeight
+
+      // Draw image centered/cropped to cover viewport
+      ctx.drawImage(img, -offsetX, -offsetY, width, height)
+      const imageData = ctx.getImageData(0, 0, viewportWidth, viewportHeight)
       const data = imageData.data
 
       // Light point (center between fingers)
-      const lightX = width * 0.5
-      const lightY = height * 0.48
-      const lightRadius = Math.min(width, height) * 0.08
+      const lightX = viewportWidth * 0.5
+      const lightY = viewportHeight * 0.48
+      const lightRadius = Math.min(viewportWidth, viewportHeight) * 0.08
 
-      dimensionsRef.current = { width, height, lightX, lightY, lightRadius }
+      dimensionsRef.current = { width: viewportWidth, height: viewportHeight, lightX, lightY, lightRadius }
 
       // Responsive dot spacing - smaller dots on larger viewports
-      const baseSpacing = 3
-      const dotSpacing = Math.max(2, baseSpacing * (1000 / viewportWidth))
+      const baseSpacing = 4
+      const dotSpacing = Math.max(3, baseSpacing * (1000 / viewportWidth))
       const dots: Dot[] = []
 
-      for (let y = dotSpacing / 2; y < height; y += dotSpacing) {
-        for (let x = dotSpacing / 2; x < width; x += dotSpacing) {
-          const i = (Math.floor(y) * width + Math.floor(x)) * 4
+      for (let y = dotSpacing / 2; y < viewportHeight; y += dotSpacing) {
+        for (let x = dotSpacing / 2; x < viewportWidth; x += dotSpacing) {
+          const i = (Math.floor(y) * viewportWidth + Math.floor(x)) * 4
           const r = data[i]
           const g = data[i + 1]
           const b = data[i + 2]
@@ -152,10 +167,7 @@ export function HeroArt() {
     <canvas
       ref={canvasRef}
       id="hero-art-canvas"
-      className="w-full"
-      style={{
-        height: 'auto',
-      }}
+      className="w-full h-full"
     />
   )
 }

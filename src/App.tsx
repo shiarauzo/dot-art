@@ -1,9 +1,7 @@
 import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Download, Palette } from 'lucide-react'
 import { HeroArt } from '@/components/HeroArt'
 import { SplashScreen } from '@/components/SplashScreen'
-import { DotText } from '@/components/DotText'
 
 function App() {
   const [splashComplete, setSplashComplete] = useState(false)
@@ -14,7 +12,6 @@ function App() {
     const file = e.target.files?.[0]
     if (!file) return
 
-    // Store file in sessionStorage as base64 for transfer
     const reader = new FileReader()
     reader.onload = () => {
       sessionStorage.setItem('pendingImage', reader.result as string)
@@ -25,64 +22,60 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-background relative">
+    <div className="min-h-screen bg-background relative overflow-hidden">
       {!splashComplete && <SplashScreen onComplete={() => setSplashComplete(true)} />}
 
-      <div className="block">
-        <nav className="border-b border-border/50">
-          <div className="container mx-auto px-4 h-11 flex items-center justify-between">
-            <span className="text-sm font-semibold tracking-tight">dotart</span>
-          </div>
-        </nav>
-
-        <div className="h-[calc(100vh-44px)] flex flex-col overflow-hidden">
-          <header className="flex-1 flex flex-col">
-            <div className="container mx-auto px-4 pt-8 text-center relative z-10">
-              <div className="flex justify-center mb-3">
-                <DotText text="Point by point" />
-              </div>
-              <p className="text-muted-foreground text-lg mb-4 max-w-xl mx-auto">
-                Transform photos into pointillist art. Ready for print or web.
-              </p>
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="px-8 py-3 text-sm font-medium bg-foreground text-background rounded-none cursor-pointer hover:bg-foreground/90 hover:scale-105 active:scale-95 transition-all duration-150 mb-3"
-              >
-                Try it
-              </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleFileSelect}
-                className="hidden"
-              />
-              <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground/50 mb-2">
-                <span className="flex items-center gap-1.5"><Download className="w-3.5 h-3.5" /> SVG & PNG</span>
-                <span>·</span>
-                <span className="flex items-center gap-1.5"><Palette className="w-3.5 h-3.5" /> Customizable</span>
-              </div>
-            </div>
-            <div className="flex-1 w-full overflow-hidden -mt-8 md:-mt-20 lg:-mt-32 relative z-0">
-              <HeroArt />
-            </div>
-          </header>
-        </div>
+      {/* Fullscreen dot-art background */}
+      <div className="absolute inset-0 opacity-20">
+        <HeroArt />
       </div>
 
-      <footer className="absolute bottom-4 left-0 right-0 text-center pointer-events-none">
-        <span className="text-xs text-muted-foreground/40">
-          made by{' '}
-          <a
-            href="https://shiara.design"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-muted-foreground transition-colors pointer-events-auto"
+      {/* Content overlay */}
+      <div className="relative z-10 min-h-screen flex flex-col">
+        {/* Top title */}
+        <header className="pt-8 md:pt-12 px-4">
+          <h1 className="text-center text-sm md:text-base tracking-[0.3em] uppercase text-muted-foreground/60">
+            Point Art app
+          </h1>
+        </header>
+
+        {/* Center content */}
+        <main className="flex-1 flex flex-col items-center justify-center px-4">
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="group cursor-pointer text-center"
           >
-            shiara arauzo
-          </a>
-        </span>
-      </footer>
+            <span className="block text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight text-foreground group-hover:opacity-80 transition-opacity">
+              Try it free
+            </span>
+            <span className="block mt-2 text-lg md:text-xl text-muted-foreground/50 group-hover:text-muted-foreground/70 transition-colors">
+              click to upload
+            </span>
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleFileSelect}
+            className="hidden"
+          />
+        </main>
+
+        {/* Footer */}
+        <footer className="pb-6 text-center">
+          <span className="text-xs text-muted-foreground/40">
+            made by{' '}
+            <a
+              href="https://shiara.design"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-muted-foreground transition-colors"
+            >
+              shiara arauzo
+            </a>
+          </span>
+        </footer>
+      </div>
     </div>
   )
 }
