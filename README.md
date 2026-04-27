@@ -1,20 +1,6 @@
-```
-                                    ·
-                                  · · ·
-                                · · · · ·
-                              · · · · · · ·
-                            · · · · · · · · ·
-                          · · · · · · · · · · ·
-                            · · · · · · · · ·
-                              · · · · · · ·
-                                · · · · ·
-                                  · · ·
-                                    ·
-```
-
 # dotart
 
-**Point by point.** Transform photos into pointillist art.
+Transform photos into pointillist art. Ready for print or web. *by [shiara](https://shiara.design)*
 
 [Live Demo](https://dotart.vercel.app) · [Report Bug](https://github.com/shiarauzo/dot-art/issues)
 
