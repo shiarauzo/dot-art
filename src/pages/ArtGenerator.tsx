@@ -62,7 +62,7 @@ export function ArtGenerator() {
         setProcessingStep('Isolating subject...')
         const processedBlob = await removeBackground(blob)
         const url = URL.createObjectURL(processedBlob)
-        const img = new Image()
+        const img = document.createElement('img')
         img.onload = () => {
           setImage(img)
           setIsProcessing(false)
@@ -71,7 +71,7 @@ export function ArtGenerator() {
         img.src = url
       } catch (error) {
         console.error('Background removal failed:', error)
-        const img = new Image()
+        const img = document.createElement('img')
         img.onload = () => {
           setImage(img)
           setIsProcessing(false)
@@ -80,7 +80,7 @@ export function ArtGenerator() {
         img.src = dataUrl
       }
     } else {
-      const img = new Image()
+      const img = document.createElement('img')
       img.onload = () => {
         setImage(img)
         setIsProcessing(false)
@@ -321,7 +321,7 @@ export function ArtGenerator() {
 
   const downloadPNG = () => {
     if (!svgExport) return
-    const img = new Image()
+    const img = document.createElement('img')
     img.onload = () => {
       const canvas = document.createElement('canvas')
       canvas.width = img.width
