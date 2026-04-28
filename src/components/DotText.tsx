@@ -92,14 +92,16 @@ export function DotText({
 
         // Only draw shadow where there's no main text (shadow behind)
         if (shadowBrightness > 0.5 && mainBrightness < 0.5) {
-          const maxRadius = dotSpacing / 2 - 0.5
+          const maxRadius = Math.max(0.1, dotSpacing / 2 - 0.5)
           const radius = shadowBrightness * maxRadius * 0.7
 
           // Shadow dots
-          ctx.fillStyle = shadowColor
-          ctx.beginPath()
-          ctx.arc(x, y, radius, 0, Math.PI * 2)
-          ctx.fill()
+          if (radius > 0) {
+            ctx.fillStyle = shadowColor
+            ctx.beginPath()
+            ctx.arc(x, y, radius, 0, Math.PI * 2)
+            ctx.fill()
+          }
         }
       }
     }
@@ -111,13 +113,15 @@ export function DotText({
         const brightness = mainData.data[i] / 255
 
         if (brightness > 0.5) {
-          const maxRadius = dotSpacing / 2 - 0.4
+          const maxRadius = Math.max(0.1, dotSpacing / 2 - 0.4)
           const radius = brightness * maxRadius * 0.8
 
-          ctx.fillStyle = color
-          ctx.beginPath()
-          ctx.arc(x, y, radius, 0, Math.PI * 2)
-          ctx.fill()
+          if (radius > 0) {
+            ctx.fillStyle = color
+            ctx.beginPath()
+            ctx.arc(x, y, radius, 0, Math.PI * 2)
+            ctx.fill()
+          }
         }
       }
     }
