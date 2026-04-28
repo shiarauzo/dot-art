@@ -1,6 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { Analytics } from '@vercel/analytics/react'
 import '@fontsource/space-mono/400.css'
 import '@fontsource/space-mono/700.css'
 import '@fontsource/playfair-display/400.css'
@@ -19,6 +20,7 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/art-generator" element={<ArtGenerator />} />
         </Routes>
       </BrowserRouter>
+      <Analytics />
     </AuthProvider>
   </StrictMode>,
 )
