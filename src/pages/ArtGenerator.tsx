@@ -665,7 +665,7 @@ export function ArtGenerator() {
               href="https://shiara.design"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-neutral-500 hover:text-[#a0d8e8] transition-colors"
+              className="text-neutral-500 hover:text-[#ff6b9d] transition-colors cursor-pointer"
             >
               shiara arauzo
             </a>
